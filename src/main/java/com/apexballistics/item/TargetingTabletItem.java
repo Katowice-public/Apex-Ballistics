@@ -53,6 +53,15 @@ public class TargetingTabletItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
+        if (player.isShiftKeyDown()) {
+            int height = cycleAirburstHeight(stack);
+            if (!level.isClientSide) {
+                player.displayClientMessage(Component.translatable(
+                        "message.apexballistics.airburst_height", height)
+                        .withStyle(ChatFormatting.YELLOW), true);
+            }
+            return InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
+        }
         Optional<BlockPos> target = readTarget(stack);
         if (!level.isClientSide) {
             if (target.isPresent()) {
@@ -131,6 +140,22 @@ public class TargetingTabletItem extends Item {
         return List.copyOf(points);
     }
 
+    public static int readAirburstHeight(ItemStack stack) {
+        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
+        if (data == null || !data.copyTag().contains("AirburstHeight")) {
+            return 10;
+        }
+        return Math.clamp(data.copyTag().getInt("AirburstHeight"), 5, 30);
+    }
+
+    private static int cycleAirburstHeight(ItemStack stack) {
+        int old = readAirburstHeight(stack);
+        int next = old >= 30 ? 5 : old + 5;
+        CustomData.update(DataComponents.CUSTOM_DATA, stack,
+                tag -> tag.putInt("AirburstHeight", next));
+        return next;
+    }
+
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("item.apexballistics.targeting_tablet.desc").withStyle(ChatFormatting.GRAY));
@@ -141,5 +166,7 @@ public class TargetingTabletItem extends Item {
             tooltip.add(Component.translatable("tooltip.apexballistics.waypoints", waypointCount)
                     .withStyle(ChatFormatting.GREEN));
         }
+        tooltip.add(Component.translatable("tooltip.apexballistics.airburst_height",
+                readAirburstHeight(stack)).withStyle(ChatFormatting.YELLOW));
     }
 }

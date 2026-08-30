@@ -159,6 +159,10 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
         this.launchQuality = Math.clamp(launchQuality, 0.5f, 1.0f);
     }
 
+    public void setAirburstHeight(int airburstHeight) {
+        this.airburstHeight = Math.clamp(airburstHeight, 5, 30);
+    }
+
     public void intercept() {
         if (!level().isClientSide) {
             payload = PayloadType.FRAGMENTATION;

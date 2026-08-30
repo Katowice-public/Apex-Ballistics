@@ -162,5 +162,7 @@
   "message.apexballistics.crane_loaded": "Crane loaded a nearby compatible launcher.",
   "message.apexballistics.crane_no_launcher": "No compatible launcher within crane reach.",
   "message.apexballistics.submarine_status": "Submarine control: %s submerged SLBM tube(s) linked.",
-  "message.apexballistics.command_status": "Network tracks %s missiles (%s hostile). Faction: %s"
+  "message.apexballistics.command_status": "Network tracks %s missiles (%s hostile). Faction: %s",
+  "tooltip.apexballistics.airburst_height": "Programmed airburst height: %s blocks",
+  "message.apexballistics.airburst_height": "Airburst height set to %s blocks."
 }

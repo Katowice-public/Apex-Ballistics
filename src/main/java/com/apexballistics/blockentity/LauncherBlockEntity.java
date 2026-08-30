@@ -53,6 +53,7 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
     private int autoScan;
     private int integrity = 100;
     private int empTicks;
+    private int programmedAirburstHeight = 10;
 
     public LauncherBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.LAUNCHER.get(), pos, state);
@@ -76,6 +77,11 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
     public void setFlightPlan(List<BlockPos> points) {
         this.waypoints = List.copyOf(points);
         this.target = points.isEmpty() ? null : points.get(points.size() - 1);
+        setChangedAndSync();
+    }
+
+    public void setProgrammedAirburstHeight(int height) {
+        programmedAirburstHeight = Math.clamp(height, 5, 30);
         setChangedAndSync();
     }
 
@@ -149,6 +155,7 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
         entity.configureFromStack(missile);
         entity.setWaypoints(waypoints);
         entity.setLaunchQuality(isHardenedInstallation() ? 1.0f : 0.9f);
+        entity.setAirburstHeight(programmedAirburstHeight);
         Vec3 spawn = Vec3.atCenterOf(worldPosition).add(0, 0.8, 0);
         entity.setPos(spawn.x, spawn.y, spawn.z);
         if (player != null) {
@@ -362,6 +369,7 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
         tag.putInt("Cooldown", cooldown);
         tag.putInt("Integrity", integrity);
         tag.putInt("EmpTicks", empTicks);
+        tag.putInt("AirburstHeight", programmedAirburstHeight);
     }
 
     @Override
@@ -391,6 +399,8 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
         cooldown = tag.getInt("Cooldown");
         integrity = tag.contains("Integrity") ? tag.getInt("Integrity") : 100;
         empTicks = tag.getInt("EmpTicks");
+        programmedAirburstHeight = tag.contains("AirburstHeight")
+                ? Math.clamp(tag.getInt("AirburstHeight"), 5, 30) : 10;
     }
 
     @Override

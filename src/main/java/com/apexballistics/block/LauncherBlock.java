@@ -103,6 +103,8 @@ public class LauncherBlock extends Block implements EntityBlock {
                 if (!level.isClientSide) {
                     java.util.List<BlockPos> waypoints = TargetingTabletItem.readWaypoints(stack);
                     launcher.setFlightPlan(waypoints.isEmpty() ? java.util.List.of(target) : waypoints);
+                    launcher.setProgrammedAirburstHeight(
+                            TargetingTabletItem.readAirburstHeight(stack));
                     player.displayClientMessage(Component.translatable("message.apexballistics.launcher_target", target.getX(), target.getY(), target.getZ())
                             .withStyle(ChatFormatting.AQUA), true);
                 }
