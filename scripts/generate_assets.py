@@ -274,6 +274,22 @@ def armor_layer(layer: int) -> bytes:
     return bytes(buf)
 
 
+def missile_entity_texture() -> bytes:
+    """Neutral metal atlas tinted per missile type by the entity renderer."""
+    w, h = 64, 32
+    buf = bytearray(w * h * 4)
+    noise_metal(buf, w, h, (210, 218, 224), 73)
+    # Dark thermal shielding and panel seams make the cuboid model readable.
+    rect(buf, w, 0, 20, 64, 32, (62, 68, 72, 255))
+    for x in range(0, w, 8):
+        vline(buf, w, x, 0, h, (120, 128, 134, 255))
+    for y in (7, 15, 23):
+        hline(buf, w, 0, w, y, (105, 112, 118, 255))
+    rect(buf, w, 16, 0, 28, 8, (45, 48, 52, 255))
+    rect(buf, w, 28, 0, 44, 12, (150, 158, 164, 255))
+    return bytes(buf)
+
+
 def write_json(path: Path, obj) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(obj, indent=2) + "\n")
@@ -306,6 +322,7 @@ def main() -> None:
     tex_item = ASSETS / "textures" / "item"
     tex_block = ASSETS / "textures" / "block"
     tex_armor = ASSETS / "textures" / "models" / "armor"
+    tex_entity = ASSETS / "textures" / "entity"
     models_item = ASSETS / "models" / "item"
     models_block = ASSETS / "models" / "block"
     blockstates = ASSETS / "blockstates"
@@ -341,6 +358,7 @@ def main() -> None:
 
     write_png(tex_armor / "apex_composite_layer_1.png", 64, 32, armor_layer(1))
     write_png(tex_armor / "apex_composite_layer_2.png", 64, 32, armor_layer(2))
+    write_png(tex_entity / "missile.png", 64, 32, missile_entity_texture())
 
     recipes = DATA / "recipe"
     recipes.mkdir(parents=True, exist_ok=True)

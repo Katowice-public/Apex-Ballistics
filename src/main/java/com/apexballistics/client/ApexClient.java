@@ -21,4 +21,9 @@ public final class ApexClient {
         event.registerEntityRenderer(ModEntities.MISSILE.get(), MissileRenderer::new);
         event.registerEntityRenderer(ModEntities.GAUSS_SLUG.get(), GaussSlugRenderer::new);
     }
+
+    @SubscribeEvent
+    public static void registerLayerDefinitions(EntityRenderersEvent.RegisterLayerDefinitions event) {
+        event.registerLayerDefinition(MissileModel.LAYER, MissileModel::createBodyLayer);
+    }
 }
