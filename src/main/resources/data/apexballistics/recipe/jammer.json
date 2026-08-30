@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "apexballistics:apex_alloy"
+    },
+    "C": {
+      "item": "apexballistics:circuit_board"
+    },
+    "E": {
+      "item": "minecraft:echo_shard"
+    },
+    "G": {
+      "item": "apexballistics:guidance_chip"
+    }
+  },
+  "pattern": [
+    "ACA",
+    "EGE",
+    "ACA"
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:jammer"
+  }
+}

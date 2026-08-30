@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "S": {
+      "item": "apexballistics:blast_steel"
+    },
+    "C": {
+      "item": "apexballistics:circuit_board"
+    },
+    "A": {
+      "item": "apexballistics:apex_alloy"
+    }
+  },
+  "pattern": [
+    "SSS",
+    "CAC"
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:silo_hatch"
+  }
+}

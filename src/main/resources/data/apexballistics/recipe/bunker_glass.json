@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "apexballistics:apex_alloy"
+    },
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "O": {
+      "item": "minecraft:obsidian"
+    }
+  },
+  "pattern": [
+    "AGA",
+    "GOG",
+    "AGA"
+  ],
+  "result": {
+    "count": 4,
+    "id": "apexballistics:bunker_glass"
+  }
+}

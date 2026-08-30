@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "apexballistics:guidance_chip"
+    },
+    {
+      "item": "apexballistics:circuit_board"
+    },
+    {
+      "item": "minecraft:amethyst_shard"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:precision_package"
+  }
+}

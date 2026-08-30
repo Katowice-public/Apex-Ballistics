@@ -11,12 +11,12 @@ Requires:
 ## Install
 
 1. Install [Minecraft Forge 1.21.1](https://files.minecraftforge.net/net/minecraftforge/forge/index_1.21.1.html).
-2. Drop `apexballistics-1.0.0.jar` into your `.minecraft/mods` folder.
+2. Drop `apexballistics-2.0.0.jar` into your `.minecraft/mods` folder.
 3. Launch the Forge 1.21.1 profile.
 
-Build it yourself with `./gradlew build`. The playable jar is `build/libs/apexballistics-1.0.0.jar`.
+Build it yourself with `./gradlew build`. The playable jar is `build/libs/apexballistics-2.0.0.jar`.
 
-## What's in 1.0
+## What's in 2.0
 
 ### 3D flight and animation
 
@@ -77,6 +77,51 @@ Better protection than netherite, with per-piece bonuses:
 5. Shift-right-click the launcher (or power it with redstone) to fire.
 
 All items live in the **Apex Ballistics** creative tab.
+
+## Modular engineering
+
+Carry a missile and use modules on the **Missile Assembly Station** to change
+its guidance, payload, fuse, motor stages, accuracy, reliability, and
+anti-jamming capability. Targeting tablets support up to six waypoints:
+click normally to begin a route and sneak-click additional blocks to append
+waypoints.
+
+Payloads include EMP, incendiary, penetrator, fragmentation, decoy, and MIRV.
+Fuses include impact, proximity, airburst, and delayed modes. Ballistic rounds
+support staged boost and re-entry effects; terrain-following guidance samples
+the landscape ahead of cruise missiles.
+
+## Layered defense and infrastructure
+
+- Linked radar extends compatible SAM battery coverage and reports tracking
+  quality through terrain occlusion.
+- Passive detectors, CIWS, laser defense, interceptors, VLS blocks, mobile
+  deployable launchers, and command consoles form a layered defense network.
+- Missile racks, loading cranes, propellant refineries, maintenance stations,
+  capacitor chargers, and submarine control blocks provide logistics.
+- Reinforced concrete variants, blast steel, bunker glass, animated blast and
+  security doors, and silo hatches support hardened base construction.
+
+## Optional factions and IFF
+
+Factions are optional and use vanilla scoreboard teams. Players with no team
+remain neutral and are not automatically attacked by player-owned defenses.
+Members of the same team are friendly. The reserved team name `outlaws` is
+treated as hostile:
+
+```text
+/team add outlaws
+/team join outlaws <player>
+```
+
+No player is required to join a faction.
+
+## Powered equipment
+
+Apex armor stores energy and accepts one module per piece at a Maintenance
+Station: thermal vision, radar warning, shield, mobility, camouflage, or
+medical support. Capacitor Chargers refill armor and cool gauss/rail weapons.
+Magnetic weapons build heat and temporarily refuse to fire when overheated.
 
 ## Config
 

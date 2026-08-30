@@ -17,6 +17,7 @@ import com.apexballistics.item.TargetingTabletItem;
 import net.minecraft.core.Holder;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.DoubleHighBlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.SwordItem;
@@ -150,8 +151,12 @@ public final class ModItems {
     public static final RegistryObject<BlockItem> HAZARD_CONCRETE = blockItem("hazard_concrete", ModBlocks.HAZARD_CONCRETE, Rarity.COMMON);
     public static final RegistryObject<BlockItem> BLAST_STEEL = blockItem("blast_steel", ModBlocks.BLAST_STEEL, Rarity.UNCOMMON);
     public static final RegistryObject<BlockItem> BUNKER_GLASS = blockItem("bunker_glass", ModBlocks.BUNKER_GLASS, Rarity.UNCOMMON);
-    public static final RegistryObject<BlockItem> BLAST_DOOR = blockItem("blast_door", ModBlocks.BLAST_DOOR, Rarity.UNCOMMON);
-    public static final RegistryObject<BlockItem> SECURITY_DOOR = blockItem("security_door", ModBlocks.SECURITY_DOOR, Rarity.UNCOMMON);
+    public static final RegistryObject<BlockItem> BLAST_DOOR = ITEMS.register("blast_door",
+            () -> new DoubleHighBlockItem(ModBlocks.BLAST_DOOR.get(),
+                    new Item.Properties().rarity(Rarity.UNCOMMON).fireResistant()));
+    public static final RegistryObject<BlockItem> SECURITY_DOOR = ITEMS.register("security_door",
+            () -> new DoubleHighBlockItem(ModBlocks.SECURITY_DOOR.get(),
+                    new Item.Properties().rarity(Rarity.UNCOMMON).fireResistant()));
     public static final RegistryObject<BlockItem> SILO_HATCH = blockItem("silo_hatch", ModBlocks.SILO_HATCH, Rarity.UNCOMMON);
 
     private static RegistryObject<MissileItem> missile(String name, MissileKind kind, Rarity rarity) {

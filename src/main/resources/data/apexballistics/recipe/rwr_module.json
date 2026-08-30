@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "apexballistics:capacitor"
+    },
+    {
+      "item": "apexballistics:circuit_board"
+    },
+    {
+      "item": "minecraft:bell"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:rwr_module"
+  }
+}

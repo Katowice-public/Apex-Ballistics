@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "item": "minecraft:iron_block"
+    },
+    "A": {
+      "item": "apexballistics:apex_alloy"
+    },
+    "N": {
+      "item": "minecraft:netherite_scrap"
+    }
+  },
+  "pattern": [
+    "IAI",
+    "ANA",
+    "IAI"
+  ],
+  "result": {
+    "count": 4,
+    "id": "apexballistics:blast_steel"
+  }
+}
