@@ -208,7 +208,9 @@ def block_texture(name: str) -> bytes:
         "sam_battery": (120, 100, 40),
         "radar": (40, 90, 130),
     }
-    noise_metal(buf, w, h, bases[name], hash(name) & 255)
+    # Python randomizes hash() between processes, so use a stable seed to keep
+    # generated resources reproducible across developer machines and CI.
+    noise_metal(buf, w, h, bases[name], zlib.crc32(name.encode("utf-8")) & 255)
     if name == "icbm_silo":
         rect(buf, w, 4, 4, 12, 12, (20, 20, 22, 255))
         rect(buf, w, 6, 2, 10, 14, (180, 180, 190, 255))
