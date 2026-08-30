@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "apexballistics:apex_alloy_block",
+    "apexballistics:icbm_silo",
+    "apexballistics:slbm_tube",
+    "apexballistics:cruise_pad",
+    "apexballistics:sam_battery",
+    "apexballistics:radar"
+  ]
+}

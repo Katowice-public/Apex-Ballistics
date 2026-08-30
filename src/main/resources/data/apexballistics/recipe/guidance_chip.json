@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "E": {
+      "item": "minecraft:ender_eye"
+    },
+    "Q": {
+      "item": "minecraft:quartz"
+    },
+    "C": {
+      "item": "apexballistics:circuit_board"
+    }
+  },
+  "pattern": [
+    "AEA",
+    "QCQ",
+    "AEA"
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:guidance_chip"
+  }
+}

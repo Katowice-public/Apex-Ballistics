@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "Q": {
+      "item": "minecraft:ender_eye"
+    },
+    "A": {
+      "item": "apexballistics:apex_alloy"
+    },
+    "C": {
+      "item": "apexballistics:circuit_board"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone_block"
+    }
+  },
+  "pattern": [
+    " Q ",
+    "ACA",
+    "IRI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:radar"
+  }
+}

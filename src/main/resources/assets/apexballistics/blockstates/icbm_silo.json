@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "apexballistics:block/icbm_silo"
+    },
+    "facing=south": {
+      "model": "apexballistics:block/icbm_silo",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "apexballistics:block/icbm_silo",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "apexballistics:block/icbm_silo",
+      "y": 90
+    }
+  }
+}

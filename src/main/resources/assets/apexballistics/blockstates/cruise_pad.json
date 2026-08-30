@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "apexballistics:block/cruise_pad"
+    },
+    "facing=south": {
+      "model": "apexballistics:block/cruise_pad",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "apexballistics:block/cruise_pad",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "apexballistics:block/cruise_pad",
+      "y": 90
+    }
+  }
+}

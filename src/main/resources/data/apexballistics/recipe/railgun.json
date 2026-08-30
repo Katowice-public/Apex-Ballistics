@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "apexballistics:apex_alloy"
+    },
+    "E": {
+      "item": "minecraft:echo_shard"
+    },
+    "N": {
+      "item": "minecraft:netherite_ingot"
+    },
+    "G": {
+      "item": "apexballistics:gauss_rifle"
+    },
+    "C": {
+      "item": "apexballistics:guidance_chip"
+    }
+  },
+  "pattern": [
+    "AEE",
+    "NGC",
+    "  A"
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:railgun"
+  }
+}

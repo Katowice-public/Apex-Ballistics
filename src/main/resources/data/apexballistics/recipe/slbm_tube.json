@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "apexballistics:apex_alloy"
+    },
+    "H": {
+      "item": "minecraft:heart_of_the_sea"
+    },
+    "P": {
+      "item": "minecraft:prismarine_shard"
+    },
+    "D": {
+      "item": "minecraft:dispenser"
+    },
+    "R": {
+      "item": "apexballistics:circuit_board"
+    }
+  },
+  "pattern": [
+    "AHA",
+    "PDP",
+    "ARA"
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:slbm_tube"
+  }
+}

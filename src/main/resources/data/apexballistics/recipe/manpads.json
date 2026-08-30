@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "apexballistics:apex_alloy"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "C": {
+      "item": "apexballistics:circuit_board"
+    }
+  },
+  "pattern": [
+    "A  ",
+    "ICI",
+    "  A"
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:manpads"
+  }
+}

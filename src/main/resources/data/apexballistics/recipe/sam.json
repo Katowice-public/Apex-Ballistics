@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "apexballistics:apex_alloy"
+    },
+    "F": {
+      "item": "apexballistics:solid_fuel"
+    },
+    "W": {
+      "item": "apexballistics:warhead"
+    },
+    "E": {
+      "item": "minecraft:ender_pearl"
+    },
+    "G": {
+      "item": "apexballistics:guidance_chip"
+    }
+  },
+  "pattern": [
+    " A ",
+    "FWE",
+    " G "
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:sam"
+  }
+}
