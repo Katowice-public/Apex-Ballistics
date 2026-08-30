@@ -59,16 +59,16 @@ public final class ModItems {
             () -> new TargetingTabletItem(new Item.Properties().stacksTo(1).rarity(Rarity.UNCOMMON)));
 
     public static final RegistryObject<ArmorItem> APEX_HELMET = ITEMS.register("apex_helmet",
-            () -> new ApexArmorItem(Holder.direct(ModArmorMaterials.APEX_COMPOSITE.get()), ArmorItem.Type.HELMET,
+            () -> new ApexArmorItem(Holder.direct(ModArmorMaterials.APEX_COMPOSITE_MATERIAL), ArmorItem.Type.HELMET,
                     new Item.Properties().fireResistant().durability(ArmorItem.Type.HELMET.getDurability(45)).rarity(Rarity.EPIC)));
     public static final RegistryObject<ArmorItem> APEX_CHESTPLATE = ITEMS.register("apex_chestplate",
-            () -> new ApexArmorItem(Holder.direct(ModArmorMaterials.APEX_COMPOSITE.get()), ArmorItem.Type.CHESTPLATE,
+            () -> new ApexArmorItem(Holder.direct(ModArmorMaterials.APEX_COMPOSITE_MATERIAL), ArmorItem.Type.CHESTPLATE,
                     new Item.Properties().fireResistant().durability(ArmorItem.Type.CHESTPLATE.getDurability(45)).rarity(Rarity.EPIC)));
     public static final RegistryObject<ArmorItem> APEX_LEGGINGS = ITEMS.register("apex_leggings",
-            () -> new ApexArmorItem(Holder.direct(ModArmorMaterials.APEX_COMPOSITE.get()), ArmorItem.Type.LEGGINGS,
+            () -> new ApexArmorItem(Holder.direct(ModArmorMaterials.APEX_COMPOSITE_MATERIAL), ArmorItem.Type.LEGGINGS,
                     new Item.Properties().fireResistant().durability(ArmorItem.Type.LEGGINGS.getDurability(45)).rarity(Rarity.EPIC)));
     public static final RegistryObject<ArmorItem> APEX_BOOTS = ITEMS.register("apex_boots",
-            () -> new ApexArmorItem(Holder.direct(ModArmorMaterials.APEX_COMPOSITE.get()), ArmorItem.Type.BOOTS,
+            () -> new ApexArmorItem(Holder.direct(ModArmorMaterials.APEX_COMPOSITE_MATERIAL), ArmorItem.Type.BOOTS,
                     new Item.Properties().fireResistant().durability(ArmorItem.Type.BOOTS.getDurability(45)).rarity(Rarity.EPIC)));
 
     public static final RegistryObject<BlockItem> APEX_ALLOY_BLOCK = ITEMS.register("apex_alloy_block",
