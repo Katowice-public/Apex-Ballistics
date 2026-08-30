@@ -33,6 +33,7 @@ import net.minecraft.world.entity.monster.Vex;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -100,6 +101,9 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
         }
         if (cooldown > 0) {
             cooldown--;
+            if (cooldown == 0 && launcherType() == LauncherType.SILO) {
+                setSiloHatches(false);
+            }
         }
         if (level.hasNeighborSignal(worldPosition) && cooldown == 0 && !missile.isEmpty()) {
             tryLaunch(null);
@@ -130,11 +134,12 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
             return false;
         }
         MissileKind kind = missileItem.kind();
+        boolean wetLaunch = true;
         if (launcherType() == LauncherType.TUBE) {
-            boolean wet = !level.getFluidState(worldPosition).isEmpty()
+            wetLaunch = !level.getFluidState(worldPosition).isEmpty()
                     || !level.getFluidState(worldPosition.above()).isEmpty()
                     || worldPosition.getY() < level.getSeaLevel();
-            if (!wet && player != null) {
+            if (!wetLaunch && player != null) {
                 player.displayClientMessage(net.minecraft.network.chat.Component.translatable("message.apexballistics.slbm_water"), true);
             }
         }
@@ -172,6 +177,12 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
             entity.setDeltaMovement(dir);
         } else {
             DirectionLaunch(entity, kind);
+        }
+        if (!wetLaunch) {
+            entity.setDeltaMovement(entity.getDeltaMovement().scale(0.65));
+        }
+        if (launcherType() == LauncherType.SILO) {
+            setSiloHatches(true);
         }
 
         level.addFreshEntity(entity);
@@ -292,6 +303,21 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
             }
         }
         return reinforced >= 8;
+    }
+
+    private void setSiloHatches(boolean open) {
+        if (level == null) {
+            return;
+        }
+        for (BlockPos pos : BlockPos.betweenClosed(worldPosition.offset(-2, 0, -2),
+                worldPosition.offset(2, 4, 2))) {
+            BlockState state = level.getBlockState(pos);
+            if (state.is(ModBlocks.SILO_HATCH.get())
+                    && state.hasProperty(TrapDoorBlock.OPEN)
+                    && state.getValue(TrapDoorBlock.OPEN) != open) {
+                level.setBlock(pos, state.setValue(TrapDoorBlock.OPEN, open), 3);
+            }
+        }
     }
 
     @Override

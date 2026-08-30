@@ -36,11 +36,12 @@ public class MissileAssemblyBlock extends Block {
             if (!level.isClientSide && missile.getItem() instanceof MissileItem missileItem) {
                 MissileSpecification old = MissileSpecification.fromStack(missile, missileItem.kind());
                 MissileSpecification.write(missile, module.apply(old));
+                Component moduleName = held.getHoverName().copy();
                 if (!player.getAbilities().instabuild) {
                     held.shrink(1);
                 }
                 player.displayClientMessage(Component.translatable(
-                        "message.apexballistics.module_installed", held.getHoverName(),
+                        "message.apexballistics.module_installed", moduleName,
                         missile.getHoverName()).withStyle(ChatFormatting.GREEN), true);
             }
             return ItemInteractionResult.sidedSuccess(level.isClientSide);
