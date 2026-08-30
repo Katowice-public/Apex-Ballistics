@@ -1,6 +1,7 @@
 package com.apexballistics.registry;
 
 import com.apexballistics.ApexBallistics;
+import com.apexballistics.entity.FlareEntity;
 import com.apexballistics.entity.GaussSlugEntity;
 import com.apexballistics.entity.MissileEntity;
 import net.minecraft.world.entity.EntityType;
@@ -16,7 +17,7 @@ public final class ModEntities {
     public static final RegistryObject<EntityType<MissileEntity>> MISSILE = ENTITY_TYPES.register("missile",
             () -> EntityType.Builder.<MissileEntity>of(MissileEntity::new, MobCategory.MISC)
                     .sized(0.7f, 0.7f)
-                    .clientTrackingRange(16)
+                    .clientTrackingRange(64)
                     .updateInterval(1)
                     .fireImmune()
                     .build("missile"));
@@ -28,6 +29,14 @@ public final class ModEntities {
                     .updateInterval(1)
                     .fireImmune()
                     .build("gauss_slug"));
+
+    public static final RegistryObject<EntityType<FlareEntity>> FLARE = ENTITY_TYPES.register("flare",
+            () -> EntityType.Builder.<FlareEntity>of(FlareEntity::new, MobCategory.MISC)
+                    .sized(0.2f, 0.2f)
+                    .clientTrackingRange(12)
+                    .updateInterval(2)
+                    .fireImmune()
+                    .build("flare"));
 
     private ModEntities() {
     }

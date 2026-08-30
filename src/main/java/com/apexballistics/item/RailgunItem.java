@@ -8,6 +8,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -26,6 +27,13 @@ public class RailgunItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack weapon = player.getItemInHand(hand);
+        if (WeaponHeat.get(weapon) > 65) {
+            if (!level.isClientSide) {
+                player.displayClientMessage(Component.translatable("message.apexballistics.overheated")
+                        .withStyle(ChatFormatting.RED), true);
+            }
+            return InteractionResultHolder.fail(weapon);
+        }
         ItemStack ammo = GaussRifleItem.findSlug(player);
         if (ammo.isEmpty() && !player.getAbilities().instabuild) {
             return InteractionResultHolder.fail(weapon);
@@ -71,12 +79,22 @@ public class RailgunItem extends Item {
                 ammo.shrink(1);
             }
             level.playSound(null, player.blockPosition(), SoundEvents.WARDEN_SONIC_BOOM, SoundSource.PLAYERS, 0.7f, 1.4f);
+            WeaponHeat.add(stack, 35);
         }
         player.getCooldowns().addCooldown(this, 35);
     }
 
     @Override
+    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean selected) {
+        if (!level.isClientSide && level.getGameTime() % 10 == 0) {
+            WeaponHeat.cool(stack, selected ? 1 : 2);
+        }
+    }
+
+    @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("item.apexballistics.railgun.desc").withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("tooltip.apexballistics.heat", WeaponHeat.get(stack), WeaponHeat.MAX_HEAT)
+                .withStyle(WeaponHeat.overheated(stack) ? ChatFormatting.RED : ChatFormatting.LIGHT_PURPLE));
     }
 }

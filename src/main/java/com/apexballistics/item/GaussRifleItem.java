@@ -9,6 +9,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -26,6 +27,13 @@ public class GaussRifleItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack weapon = player.getItemInHand(hand);
+        if (WeaponHeat.get(weapon) > 82) {
+            if (!level.isClientSide) {
+                player.displayClientMessage(Component.translatable("message.apexballistics.overheated")
+                        .withStyle(ChatFormatting.RED), true);
+            }
+            return InteractionResultHolder.fail(weapon);
+        }
         ItemStack ammo = findSlug(player);
         if (ammo.isEmpty() && !player.getAbilities().instabuild) {
             return InteractionResultHolder.fail(weapon);
@@ -42,9 +50,17 @@ public class GaussRifleItem extends Item {
                 ammo.shrink(1);
             }
             level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.TRIDENT_THROW, SoundSource.PLAYERS, 1.0f, 1.6f);
+            WeaponHeat.add(weapon, 18);
         }
         player.getCooldowns().addCooldown(this, 10);
         return InteractionResultHolder.sidedSuccess(weapon, level.isClientSide);
+    }
+
+    @Override
+    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean selected) {
+        if (!level.isClientSide && level.getGameTime() % 10 == 0) {
+            WeaponHeat.cool(stack, selected ? 1 : 2);
+        }
     }
 
     public static ItemStack findSlug(Player player) {
@@ -63,5 +79,7 @@ public class GaussRifleItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable("item.apexballistics.gauss_rifle.desc").withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("tooltip.apexballistics.heat", WeaponHeat.get(stack), WeaponHeat.MAX_HEAT)
+                .withStyle(WeaponHeat.overheated(stack) ? ChatFormatting.RED : ChatFormatting.AQUA));
     }
 }

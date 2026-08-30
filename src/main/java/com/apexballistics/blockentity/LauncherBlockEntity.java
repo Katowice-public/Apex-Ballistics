@@ -2,11 +2,14 @@ package com.apexballistics.blockentity;
 
 import com.apexballistics.block.LauncherBlock;
 import com.apexballistics.block.LauncherType;
+import com.apexballistics.defense.EmpSensitive;
+import com.apexballistics.defense.FactionRelations;
 import com.apexballistics.entity.MissileEntity;
 import com.apexballistics.item.MissileItem;
 import com.apexballistics.item.MissileKind;
 import com.apexballistics.registry.ModBlockEntities;
 import com.apexballistics.registry.ModEntities;
+import com.apexballistics.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -36,15 +39,19 @@ import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Comparator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class LauncherBlockEntity extends BlockEntity {
+public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
     private ItemStack missile = ItemStack.EMPTY;
     private BlockPos target;
+    private List<BlockPos> waypoints = List.of();
     private UUID operator;
     private int cooldown;
     private int autoScan;
+    private int integrity = 100;
+    private int empTicks;
 
     public LauncherBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.LAUNCHER.get(), pos, state);
@@ -55,12 +62,19 @@ public class LauncherBlockEntity extends BlockEntity {
     }
 
     public void setMissile(ItemStack missile) {
-        this.missile = missile;
+        this.missile = missile.copyWithCount(Math.min(launcherType().capacity(), missile.getCount()));
         setChangedAndSync();
     }
 
     public void setTarget(BlockPos target) {
         this.target = target;
+        this.waypoints = target == null ? List.of() : List.of(target);
+        setChangedAndSync();
+    }
+
+    public void setFlightPlan(List<BlockPos> points) {
+        this.waypoints = List.copyOf(points);
+        this.target = points.isEmpty() ? null : points.get(points.size() - 1);
         setChangedAndSync();
     }
 
@@ -80,6 +94,10 @@ public class LauncherBlockEntity extends BlockEntity {
         if (level == null || level.isClientSide) {
             return;
         }
+        if (empTicks > 0) {
+            empTicks--;
+            return;
+        }
         if (cooldown > 0) {
             cooldown--;
         }
@@ -89,7 +107,9 @@ public class LauncherBlockEntity extends BlockEntity {
         if (launcherType() == LauncherType.SAM_BATTERY && !missile.isEmpty() && cooldown == 0) {
             autoScan++;
             if (autoScan % 10 == 0) {
-                Entity airTarget = findAirTarget(48.0);
+                double range = RadarBlockEntity.hasNetworkCoverage(level, worldPosition, operator)
+                        ? 96.0 : 48.0;
+                Entity airTarget = findAirTarget(range);
                 if (airTarget != null) {
                     tryLaunchAt(null, airTarget);
                 }
@@ -102,7 +122,8 @@ public class LauncherBlockEntity extends BlockEntity {
     }
 
     public boolean tryLaunchAt(@Nullable Player player, @Nullable Entity airTarget) {
-        if (level == null || level.isClientSide || missile.isEmpty() || cooldown > 0) {
+        if (level == null || level.isClientSide || missile.isEmpty() || cooldown > 0
+                || integrity < 25 || empTicks > 0) {
             return false;
         }
         if (!(missile.getItem() instanceof MissileItem missileItem)) {
@@ -120,6 +141,9 @@ public class LauncherBlockEntity extends BlockEntity {
 
         MissileEntity entity = new MissileEntity(ModEntities.MISSILE.get(), level);
         entity.setKind(kind);
+        entity.configureFromStack(missile);
+        entity.setWaypoints(waypoints);
+        entity.setLaunchQuality(isHardenedInstallation() ? 1.0f : 0.9f);
         Vec3 spawn = Vec3.atCenterOf(worldPosition).add(0, 0.8, 0);
         entity.setPos(spawn.x, spawn.y, spawn.z);
         if (player != null) {
@@ -132,7 +156,9 @@ public class LauncherBlockEntity extends BlockEntity {
         }
 
         if (target != null && kind.profile() != MissileKind.FlightProfile.HOMING_AIR) {
-            entity.setTargetPos(target);
+            if (waypoints.isEmpty()) {
+                entity.setTargetPos(target);
+            }
             Vec3 to = Vec3.atCenterOf(target).subtract(spawn);
             if (kind.profile() == MissileKind.FlightProfile.BALLISTIC) {
                 entity.setDeltaMovement(0, kind.launchSpeed(), 0);
@@ -150,7 +176,10 @@ public class LauncherBlockEntity extends BlockEntity {
 
         level.addFreshEntity(entity);
         level.playSound(null, worldPosition, SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.BLOCKS, 1.6f, 0.6f);
-        missile = ItemStack.EMPTY;
+        missile.shrink(1);
+        if (missile.isEmpty()) {
+            missile = ItemStack.EMPTY;
+        }
         cooldown = launcherType() == LauncherType.SAM_BATTERY ? 80 : 40;
         setChangedAndSync();
         return true;
@@ -184,10 +213,16 @@ public class LauncherBlockEntity extends BlockEntity {
             return false;
         }
         if (entity instanceof MissileEntity missileEntity) {
-            return missileEntity.getKind().profile() != MissileKind.FlightProfile.HOMING_AIR;
+            Entity own = operator == null || level == null ? null : level.getPlayerByUUID(operator);
+            Entity missileOwner = missileEntity.getOwner();
+            return missileEntity.getKind().profile() != MissileKind.FlightProfile.HOMING_AIR
+                    && (missileOwner == null || FactionRelations.isHostile(own, missileOwner));
         }
         if (entity instanceof Player player) {
-            return player.isFallFlying() && player.distanceToSqr(Vec3.atCenterOf(worldPosition)) > 16;
+            Entity own = operator == null || level == null ? null : level.getPlayerByUUID(operator);
+            return player.isFallFlying()
+                    && FactionRelations.isHostile(own, player)
+                    && player.distanceToSqr(Vec3.atCenterOf(worldPosition)) > 16;
         }
         return entity instanceof Phantom
                 || entity instanceof Ghast
@@ -208,6 +243,68 @@ public class LauncherBlockEntity extends BlockEntity {
         }
     }
 
+    public boolean canLoad(ItemStack stack) {
+        return stack.getItem() instanceof MissileItem missileItem
+                && launcherType().accepts(missileItem.kind())
+                && (missile.isEmpty()
+                || ItemStack.isSameItemSameComponents(missile, stack)
+                && missile.getCount() < launcherType().capacity());
+    }
+
+    public boolean loadOne(ItemStack stack, Player player) {
+        if (!canLoad(stack)) {
+            return false;
+        }
+        if (missile.isEmpty()) {
+            missile = stack.copyWithCount(1);
+        } else {
+            missile.grow(1);
+        }
+        operator = player.getUUID();
+        if (!player.getAbilities().instabuild) {
+            stack.shrink(1);
+        }
+        setChangedAndSync();
+        return true;
+    }
+
+    public void repair() {
+        integrity = 100;
+        setChangedAndSync();
+    }
+
+    public void damageIntegrity(int amount) {
+        integrity = Math.max(0, integrity - amount);
+        setChangedAndSync();
+    }
+
+    private boolean isHardenedInstallation() {
+        if (level == null || launcherType() != LauncherType.SILO) {
+            return true;
+        }
+        int reinforced = 0;
+        for (BlockPos pos : BlockPos.betweenClosed(worldPosition.offset(-1, -1, -1),
+                worldPosition.offset(1, 0, 1))) {
+            BlockState state = level.getBlockState(pos);
+            if (state.is(ModBlocks.REINFORCED_CONCRETE.get())
+                    || state.is(ModBlocks.BLAST_STEEL.get())) {
+                reinforced++;
+            }
+        }
+        return reinforced >= 8;
+    }
+
+    @Override
+    public void disableFor(int ticks) {
+        empTicks = Math.max(empTicks, ticks);
+        setChangedAndSync();
+    }
+
+    @Override
+    public boolean isEmpDisabled() {
+        return empTicks > 0;
+    }
+
     private void setChangedAndSync() {
         setChanged();
         if (level != null) {
@@ -226,10 +323,19 @@ public class LauncherBlockEntity extends BlockEntity {
             tag.putInt("Ty", target.getY());
             tag.putInt("Tz", target.getZ());
         }
+        tag.putInt("WaypointCount", waypoints.size());
+        for (int i = 0; i < waypoints.size(); i++) {
+            BlockPos point = waypoints.get(i);
+            tag.putInt("W" + i + "X", point.getX());
+            tag.putInt("W" + i + "Y", point.getY());
+            tag.putInt("W" + i + "Z", point.getZ());
+        }
         if (operator != null) {
             tag.putUUID("Operator", operator);
         }
         tag.putInt("Cooldown", cooldown);
+        tag.putInt("Integrity", integrity);
+        tag.putInt("EmpTicks", empTicks);
     }
 
     @Override
@@ -245,8 +351,20 @@ public class LauncherBlockEntity extends BlockEntity {
         } else {
             target = null;
         }
+        int waypointCount = Math.min(6, Math.max(0, tag.getInt("WaypointCount")));
+        List<BlockPos> loadedWaypoints = new ArrayList<>(waypointCount);
+        for (int i = 0; i < waypointCount; i++) {
+            if (tag.contains("W" + i + "X")) {
+                loadedWaypoints.add(new BlockPos(tag.getInt("W" + i + "X"),
+                        tag.getInt("W" + i + "Y"), tag.getInt("W" + i + "Z")));
+            }
+        }
+        waypoints = loadedWaypoints.isEmpty() && target != null
+                ? List.of(target) : List.copyOf(loadedWaypoints);
         operator = tag.hasUUID("Operator") ? tag.getUUID("Operator") : null;
         cooldown = tag.getInt("Cooldown");
+        integrity = tag.contains("Integrity") ? tag.getInt("Integrity") : 100;
+        empTicks = tag.getInt("EmpTicks");
     }
 
     @Override

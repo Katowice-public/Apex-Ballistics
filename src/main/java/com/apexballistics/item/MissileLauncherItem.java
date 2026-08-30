@@ -41,6 +41,9 @@ public class MissileLauncherItem extends Item {
         if (!level.isClientSide) {
             MissileEntity missile = new MissileEntity(ModEntities.MISSILE.get(), level);
             missile.setKind(kind);
+            if (!ammo.isEmpty()) {
+                missile.configureFromStack(ammo);
+            }
             missile.setOwner(player);
             missile.setPos(player.getX(), player.getEyeY() - 0.1, player.getZ());
             missile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0f, kind.launchSpeed() + 0.4f, 0.15f);

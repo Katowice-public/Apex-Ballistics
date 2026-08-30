@@ -12,7 +12,8 @@ public enum MissileKind implements StringRepresentable {
     ALCM("alcm", FlightProfile.CRUISE, LauncherFit.PAD_OR_AIR, 0x6B8F3A, ChatFormatting.GREEN, false),
     CRUISE("cruise_missile", FlightProfile.CRUISE, LauncherFit.PAD, 0x4A4A4A, ChatFormatting.DARK_GRAY, false),
     SAM("sam", FlightProfile.HOMING_AIR, LauncherFit.SAM_OR_HAND, 0xD4B45A, ChatFormatting.YELLOW, false),
-    AAM("aam", FlightProfile.HOMING_AIR, LauncherFit.HAND, 0xB8C4D4, ChatFormatting.AQUA, false);
+    AAM("aam", FlightProfile.HOMING_AIR, LauncherFit.HAND, 0xB8C4D4, ChatFormatting.AQUA, false),
+    INTERCEPTOR("interceptor", FlightProfile.HOMING_AIR, LauncherFit.SAM_OR_HAND, 0xF4F7FF, ChatFormatting.LIGHT_PURPLE, false);
 
     private final String id;
     private final FlightProfile profile;
@@ -60,7 +61,7 @@ public enum MissileKind implements StringRepresentable {
             case SLBM -> (float) ApexConfig.slbmBlast;
             case SRBM -> (float) ApexConfig.icbmBlast * 0.55f;
             case ALCM, CRUISE -> (float) ApexConfig.cruiseBlast;
-            case SAM, AAM -> (float) ApexConfig.samBlast;
+            case SAM, AAM, INTERCEPTOR -> (float) ApexConfig.samBlast;
         };
     }
 
@@ -73,6 +74,7 @@ public enum MissileKind implements StringRepresentable {
             case CRUISE -> 1.6f;
             case SAM -> 2.6f;
             case AAM -> 3.0f;
+            case INTERCEPTOR -> 3.4f;
         };
     }
 
@@ -83,6 +85,7 @@ public enum MissileKind implements StringRepresentable {
             case SRBM -> 420;
             case ALCM, CRUISE -> 700;
             case SAM, AAM -> 220;
+            case INTERCEPTOR -> 360;
         };
     }
 
@@ -101,6 +104,15 @@ public enum MissileKind implements StringRepresentable {
             return ICBM;
         }
         return values[ordinal];
+    }
+
+    public static MissileKind byName(String name) {
+        for (MissileKind kind : values()) {
+            if (kind.id.equals(name)) {
+                return kind;
+            }
+        }
+        return ICBM;
     }
 
     public enum FlightProfile {

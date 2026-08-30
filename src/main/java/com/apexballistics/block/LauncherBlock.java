@@ -86,19 +86,14 @@ public class LauncherBlock extends Block implements EntityBlock {
                 }
                 return ItemInteractionResult.FAIL;
             }
-            if (!launcher.getMissile().isEmpty()) {
+            if (!launcher.canLoad(stack)) {
                 if (!level.isClientSide) {
                     player.displayClientMessage(Component.translatable("message.apexballistics.already_loaded").withStyle(ChatFormatting.YELLOW), true);
                 }
                 return ItemInteractionResult.FAIL;
             }
             if (!level.isClientSide) {
-                ItemStack loaded = stack.copyWithCount(1);
-                launcher.setMissile(loaded);
-                launcher.setOperator(player.getUUID());
-                if (!player.getAbilities().instabuild) {
-                    stack.shrink(1);
-                }
+                launcher.loadOne(stack, player);
                 player.displayClientMessage(Component.translatable("message.apexballistics.loaded", missileItem.kind().displayName()), true);
             }
             return ItemInteractionResult.sidedSuccess(level.isClientSide);
@@ -106,7 +101,8 @@ public class LauncherBlock extends Block implements EntityBlock {
         if (stack.getItem() instanceof TargetingTabletItem) {
             TargetingTabletItem.readTarget(stack).ifPresentOrElse(target -> {
                 if (!level.isClientSide) {
-                    launcher.setTarget(target);
+                    java.util.List<BlockPos> waypoints = TargetingTabletItem.readWaypoints(stack);
+                    launcher.setFlightPlan(waypoints.isEmpty() ? java.util.List.of(target) : waypoints);
                     player.displayClientMessage(Component.translatable("message.apexballistics.launcher_target", target.getX(), target.getY(), target.getZ())
                             .withStyle(ChatFormatting.AQUA), true);
                 }

@@ -38,7 +38,7 @@ public class MissileRenderer extends EntityRenderer<MissileEntity> {
             case SLBM -> 0.175f;
             case SRBM -> 0.15f;
             case ALCM, CRUISE -> 0.13f;
-            case SAM, AAM -> 0.11f;
+            case SAM, AAM, INTERCEPTOR -> 0.11f;
         };
         poseStack.scale(scale, scale, scale);
         model.setupAnim(entity, 0.0f, 0.0f, entity.tickCount + partialTicks, 0.0f, 0.0f);

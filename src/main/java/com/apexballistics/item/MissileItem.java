@@ -41,7 +41,17 @@ public class MissileItem extends Item {
         if (!level.isClientSide) {
             MissileEntity missile = new MissileEntity(ModEntities.MISSILE.get(), level);
             missile.setKind(kind);
+            missile.configureFromStack(stack);
             missile.setOwner(player);
+            ItemStack offhand = player.getOffhandItem();
+            if (offhand.getItem() instanceof TargetingTabletItem) {
+                List<net.minecraft.core.BlockPos> points = TargetingTabletItem.readWaypoints(offhand);
+                if (!points.isEmpty()) {
+                    missile.setWaypoints(points);
+                } else {
+                    TargetingTabletItem.readTarget(offhand).ifPresent(missile::setTargetPos);
+                }
+            }
             missile.setPos(player.getX(), player.getEyeY() - 0.1, player.getZ());
             missile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0f, kind.launchSpeed(), 0.4f);
             missile.acquireAirTarget(player);
@@ -57,8 +67,17 @@ public class MissileItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        MissileSpecification spec = MissileSpecification.fromStack(stack, kind);
         tooltip.add(Component.translatable("item.apexballistics." + kind.getSerializedName() + ".desc").withStyle(ChatFormatting.GRAY));
         tooltip.add(Component.translatable("tooltip.apexballistics.blast", String.format("%.1f", kind.blastPower())).withStyle(ChatFormatting.DARK_RED));
+        tooltip.add(Component.translatable("tooltip.apexballistics.guidance", spec.guidance().getSerializedName())
+                .withStyle(ChatFormatting.AQUA));
+        tooltip.add(Component.translatable("tooltip.apexballistics.payload", spec.payload().getSerializedName())
+                .withStyle(ChatFormatting.GOLD));
+        tooltip.add(Component.translatable("tooltip.apexballistics.fuse", spec.fuse().getSerializedName())
+                .withStyle(ChatFormatting.YELLOW));
+        tooltip.add(Component.translatable("tooltip.apexballistics.reliability",
+                Math.round(spec.reliability() * 100)).withStyle(ChatFormatting.GREEN));
         if (kind.handheld()) {
             tooltip.add(Component.translatable("tooltip.apexballistics.handheld").withStyle(ChatFormatting.DARK_AQUA));
         } else {
