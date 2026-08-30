@@ -33,8 +33,16 @@ def write_png(path: Path, width: int, height: int, rgba: bytes) -> None:
     path.write_bytes(png)
 
 
-def px(buf: bytearray, w: int, x: int, y: int, color: tuple[int, int, int, int]) -> None:
+def px(
+    buf: bytearray,
+    w: int,
+    x: int,
+    y: int,
+    color: tuple[int, int, int] | tuple[int, int, int, int],
+) -> None:
     if 0 <= x < w and 0 <= y < (len(buf) // (w * 4)):
+        if len(color) == 3:
+            color = (*color, 255)
         i = (y * w + x) * 4
         buf[i : i + 4] = bytes(color)
 
