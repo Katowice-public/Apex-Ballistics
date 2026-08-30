@@ -18,6 +18,16 @@ Build it yourself with `./gradlew build`. The playable jar is `build/libs/apexba
 
 ## What's in 1.0
 
+### 3D flight and animation
+
+Missiles use an articulated 3D in-flight model rather than a flat item sprite.
+Three procedural animations run smoothly on every client without an animation
+library:
+
+1. motor ignition recoil and nozzle pulse;
+2. ballistic roll stabilization;
+3. active guidance-fin corrections (more aggressive on SAMs and AAMs).
+
 ### Missiles
 
 | Round | Role | How to fire |
@@ -74,3 +84,10 @@ All items live in the **Apex Ballistics** creative tab.
 
 - `missileGriefing` — destroy blocks on detonation
 - `icbmBlast` / `slbmBlast` / `cruiseBlast` / `samBlast` — explosion power (vanilla TNT is 4.0)
+
+## Design notes
+
+The guidance, flight profiles, arming delay, target acquisition, trails, and
+relative yields are designed to feel believable at Minecraft's scale. They are
+gameplay simulations, not real-world weapon-design calculations. Server owners
+can disable terrain damage with `missileGriefing=false`.

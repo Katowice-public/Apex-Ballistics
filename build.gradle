@@ -85,6 +85,14 @@ tasks.named('jar', Jar).configure {
     }
 }
 
+tasks.register('stageReleaseJar', Sync) {
+    group = 'build'
+    description = 'Builds and copies the single distributable Forge JAR into dist/.'
+    dependsOn tasks.named('build')
+    from tasks.named('jar')
+    into layout.projectDirectory.dir('dist')
+}
+
 publishing {
     publications {
         register('mavenJava', MavenPublication) {
