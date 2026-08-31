@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/door_bottom_left",
+  "textures": {
+    "bottom": "apexballistics:block/security_door_bottom",
+    "top": "apexballistics:block/security_door_top"
+  }
+}

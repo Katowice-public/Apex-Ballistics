@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "T": {
+      "item": "minecraft:tnt"
+    },
+    "G": {
+      "item": "minecraft:ghast_tear"
+    }
+  },
+  "pattern": [
+    " T ",
+    "TGT",
+    " T "
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:warhead"
+  }
+}

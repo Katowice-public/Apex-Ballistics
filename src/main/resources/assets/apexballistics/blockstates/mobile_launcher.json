@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "apexballistics:block/mobile_launcher"
+    },
+    "facing=south": {
+      "model": "apexballistics:block/mobile_launcher",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "apexballistics:block/mobile_launcher",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "apexballistics:block/mobile_launcher",
+      "y": 90
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "apexballistics:block/vls"
+    },
+    "facing=south": {
+      "model": "apexballistics:block/vls",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "apexballistics:block/vls",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "apexballistics:block/vls",
+      "y": 90
+    }
+  }
+}

@@ -1,0 +1,920 @@
+#!/usr/bin/env python3
+"""Generate Apex Ballistics item/block textures, models, recipes, loot tables, and tags."""
+from __future__ import annotations
+
+import json
+import struct
+import zlib
+from pathlib import Path
+
+ROOT = Path("/workspace/src/main/resources")
+ASSETS = ROOT / "assets" / "apexballistics"
+DATA = ROOT / "data" / "apexballistics"
+MC_DATA = ROOT / "data" / "minecraft"
+
+ITEMS = [
+    "apex_alloy", "circuit_board", "guidance_chip", "solid_fuel", "warhead", "gauss_slug",
+    "advanced_propellant", "energy_cell", "capacitor",
+    "icbm", "slbm", "srbm", "alcm", "cruise_missile", "sam", "aam", "interceptor",
+    "manpads", "gauss_rifle", "railgun", "plasma_blade", "targeting_tablet",
+    "apex_helmet", "apex_chestplate", "apex_leggings", "apex_boots",
+    "guidance_inertial", "guidance_coordinate", "guidance_terrain", "guidance_radar",
+    "guidance_infrared", "guidance_command", "emp_payload", "incendiary_payload",
+    "penetrator_payload", "fragmentation_payload", "decoy_warhead", "mirv_warhead",
+    "proximity_fuse", "airburst_fuse", "delayed_fuse", "two_stage_motor",
+    "three_stage_motor", "precision_package", "reliability_package", "anti_jam_module",
+    "flare", "jammer", "thermal_module", "rwr_module", "shield_module",
+    "mobility_module", "camouflage_module", "medical_module",
+]
+HANDHELD = {"gauss_rifle", "railgun", "plasma_blade", "manpads", "jammer"}
+LAUNCHER_BLOCKS = {
+    "icbm_silo", "slbm_tube", "cruise_pad", "sam_battery", "mobile_launcher", "vls"
+}
+BLOCKS = [
+    "apex_alloy_block", *sorted(LAUNCHER_BLOCKS), "radar", "missile_assembly",
+    "ciws", "laser_defense", "passive_radar", "command_console", "submarine_control",
+    "missile_rack", "loading_crane", "propellant_refinery", "maintenance_station",
+    "capacitor_charger", "reinforced_concrete", "white_reinforced_concrete",
+    "black_reinforced_concrete", "olive_reinforced_concrete", "hazard_concrete",
+    "blast_steel", "bunker_glass",
+]
+DOORS = ["blast_door", "security_door"]
+TRAPDOORS = ["silo_hatch"]
+ALL_BLOCKS = BLOCKS + DOORS + TRAPDOORS
+
+
+def write_png(path: Path, width: int, height: int, rgba: bytes) -> None:
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+
+    raw = b"".join(b"\x00" + rgba[y * width * 4 : (y + 1) * width * 4] for y in range(height))
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
+    png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(png)
+
+
+def px(
+    buf: bytearray,
+    w: int,
+    x: int,
+    y: int,
+    color: tuple[int, int, int] | tuple[int, int, int, int],
+) -> None:
+    if 0 <= x < w and 0 <= y < (len(buf) // (w * 4)):
+        if len(color) == 3:
+            color = (*color, 255)
+        i = (y * w + x) * 4
+        buf[i : i + 4] = bytes(color)
+
+
+def fill(buf: bytearray, w: int, h: int, color: tuple[int, int, int, int]) -> None:
+    for y in range(h):
+        for x in range(w):
+            px(buf, w, x, y, color)
+
+
+def rect(buf: bytearray, w: int, x0: int, y0: int, x1: int, y1: int, color: tuple[int, int, int, int]) -> None:
+    for y in range(y0, y1):
+        for x in range(x0, x1):
+            px(buf, w, x, y, color)
+
+
+def hline(buf: bytearray, w: int, x0: int, x1: int, y: int, color: tuple[int, int, int, int]) -> None:
+    for x in range(x0, x1):
+        px(buf, w, x, y, color)
+
+
+def vline(buf: bytearray, w: int, x: int, y0: int, y1: int, color: tuple[int, int, int, int]) -> None:
+    for y in range(y0, y1):
+        px(buf, w, x, y, color)
+
+
+def noise_metal(buf: bytearray, w: int, h: int, base: tuple[int, int, int], seed: int) -> None:
+    for y in range(h):
+        for x in range(w):
+            n = ((x * 13 + y * 31 + seed * 17) ^ (x * y + seed)) & 15
+            shade = n - 8
+            px(buf, w, x, y, (
+                max(0, min(255, base[0] + shade * 3)),
+                max(0, min(255, base[1] + shade * 3)),
+                max(0, min(255, base[2] + shade * 3)),
+                255,
+            ))
+
+
+def item_texture(name: str) -> bytes:
+    w = h = 16
+    buf = bytearray(w * h * 4)
+    fill(buf, w, h, (0, 0, 0, 0))
+    palettes = {
+        "apex_alloy": ((20, 80, 90), (40, 210, 220), (180, 255, 255)),
+        "circuit_board": ((20, 70, 30), (40, 160, 50), (220, 180, 40)),
+        "guidance_chip": ((30, 30, 50), (80, 160, 255), (240, 240, 255)),
+        "solid_fuel": ((70, 40, 20), (200, 90, 30), (255, 200, 80)),
+        "warhead": ((50, 50, 50), (180, 40, 40), (240, 220, 80)),
+        "gauss_slug": ((40, 50, 60), (90, 200, 230), (230, 250, 255)),
+        "icbm": ((30, 30, 35), (220, 220, 230), (200, 30, 30)),
+        "slbm": ((15, 30, 70), (50, 110, 180), (220, 230, 255)),
+        "srbm": ((40, 35, 20), (180, 150, 70), (230, 50, 40)),
+        "alcm": ((30, 50, 20), (90, 130, 50), (200, 210, 80)),
+        "cruise_missile": ((25, 25, 25), (70, 70, 70), (180, 180, 40)),
+        "sam": ((50, 45, 20), (200, 170, 60), (40, 40, 40)),
+        "aam": ((40, 50, 60), (170, 190, 210), (80, 200, 255)),
+        "manpads": ((30, 40, 30), (70, 90, 50), (30, 30, 30)),
+        "gauss_rifle": ((20, 25, 30), (40, 80, 100), (80, 220, 255)),
+        "railgun": ((15, 15, 20), (50, 50, 80), (180, 80, 255)),
+        "plasma_blade": ((15, 20, 30), (20, 180, 220), (180, 255, 255)),
+        "targeting_tablet": ((20, 20, 25), (30, 90, 140), (80, 220, 180)),
+        "apex_helmet": ((15, 40, 50), (30, 160, 170), (200, 255, 255)),
+        "apex_chestplate": ((15, 40, 50), (30, 160, 170), (200, 255, 255)),
+        "apex_leggings": ((15, 40, 50), (30, 160, 170), (200, 255, 255)),
+        "apex_boots": ((15, 40, 50), (30, 160, 170), (200, 255, 255)),
+    }
+    if name.startswith("guidance_") or name.endswith("_package"):
+        fallback = ((15, 35, 55), (35, 125, 180), (100, 240, 255))
+    elif "payload" in name or "warhead" in name:
+        fallback = ((55, 18, 18), (170, 45, 35), (255, 185, 60))
+    elif "fuse" in name:
+        fallback = ((55, 40, 12), (190, 135, 30), (255, 235, 110))
+    elif name.endswith("_module"):
+        fallback = ((20, 25, 45), (85, 55, 165), (100, 230, 255))
+    else:
+        fallback = ((25, 35, 42), (65, 125, 145), (185, 245, 255))
+    dark, mid, light = palettes.get(name, fallback)
+
+    if name in {"icbm", "slbm", "srbm", "alcm", "cruise_missile", "sam", "aam", "interceptor"}:
+        # Vertical missile body
+        rect(buf, w, 6, 1, 10, 15, mid)
+        rect(buf, w, 7, 0, 9, 2, light)
+        rect(buf, w, 6, 13, 10, 16, dark)
+        px(buf, w, 5, 13, (*dark, 255))
+        px(buf, w, 10, 13, (*dark, 255))
+        px(buf, w, 4, 14, (*dark, 255))
+        px(buf, w, 11, 14, (*dark, 255))
+        hline(buf, w, 6, 10, 4, (*light, 255))
+        hline(buf, w, 6, 10, 8, (*dark, 255) if name != "icbm" else (*light, 255))
+        if name == "icbm":
+            hline(buf, w, 6, 10, 6, (200, 30, 30, 255))
+            hline(buf, w, 6, 10, 10, (200, 30, 30, 255))
+        if name in {"sam", "aam"}:
+            px(buf, w, 5, 6, (*mid, 255))
+            px(buf, w, 10, 6, (*mid, 255))
+            px(buf, w, 4, 7, (*mid, 255))
+            px(buf, w, 11, 7, (*mid, 255))
+    elif name in {"gauss_rifle", "railgun", "manpads"}:
+        rect(buf, w, 1, 7, 15, 10, mid)
+        rect(buf, w, 12, 6, 16, 11, light)
+        rect(buf, w, 4, 9, 7, 14, dark)
+        rect(buf, w, 6, 5, 9, 8, dark)
+        if name == "railgun":
+            hline(buf, w, 2, 12, 8, (*light, 255))
+        if name == "manpads":
+            rect(buf, w, 1, 6, 15, 11, mid)
+            rect(buf, w, 13, 5, 16, 12, dark)
+    elif name == "plasma_blade":
+        rect(buf, w, 7, 8, 9, 16, dark)
+        rect(buf, w, 6, 7, 10, 9, mid)
+        rect(buf, w, 7, 0, 9, 8, light)
+        px(buf, w, 6, 2, (*light, 255))
+        px(buf, w, 9, 2, (*light, 255))
+    elif name == "targeting_tablet":
+        rect(buf, w, 3, 2, 13, 14, dark)
+        rect(buf, w, 4, 3, 12, 12, mid)
+        rect(buf, w, 5, 5, 11, 10, light)
+        px(buf, w, 6, 13, (*mid, 255))
+        px(buf, w, 9, 13, (*mid, 255))
+    elif name == "apex_alloy":
+        rect(buf, w, 3, 4, 13, 13, mid)
+        rect(buf, w, 4, 5, 12, 12, light)
+        hline(buf, w, 3, 13, 4, (*dark, 255))
+        vline(buf, w, 3, 4, 13, (*dark, 255))
+    elif name == "circuit_board":
+        rect(buf, w, 2, 2, 14, 14, mid)
+        for x, y in [(4, 4), (8, 4), (12, 4), (6, 8), (10, 8), (4, 12), (12, 12)]:
+            px(buf, w, x, y, (*light, 255))
+        hline(buf, w, 4, 12, 6, (*dark, 255))
+        vline(buf, w, 8, 4, 12, (*dark, 255))
+    elif name == "guidance_chip":
+        rect(buf, w, 4, 4, 12, 12, dark)
+        rect(buf, w, 5, 5, 11, 11, mid)
+        px(buf, w, 8, 8, (*light, 255))
+        hline(buf, w, 3, 13, 8, (*mid, 255))
+        vline(buf, w, 8, 3, 13, (*mid, 255))
+    elif name == "solid_fuel":
+        rect(buf, w, 5, 1, 11, 15, mid)
+        rect(buf, w, 6, 2, 10, 14, light)
+        hline(buf, w, 5, 11, 5, (*dark, 255))
+        hline(buf, w, 5, 11, 10, (*dark, 255))
+    elif name == "warhead":
+        rect(buf, w, 5, 3, 11, 14, mid)
+        rect(buf, w, 6, 1, 10, 4, light)
+        rect(buf, w, 6, 8, 10, 12, (200, 40, 40, 255))
+    elif name == "gauss_slug":
+        rect(buf, w, 4, 6, 12, 10, mid)
+        rect(buf, w, 11, 5, 15, 11, light)
+        rect(buf, w, 2, 6, 5, 10, dark)
+    elif name == "apex_helmet":
+        rect(buf, w, 4, 3, 12, 10, mid)
+        rect(buf, w, 5, 6, 11, 9, light)
+        rect(buf, w, 3, 8, 5, 11, dark)
+        rect(buf, w, 11, 8, 13, 11, dark)
+    elif name == "apex_chestplate":
+        rect(buf, w, 3, 3, 13, 14, mid)
+        rect(buf, w, 6, 5, 10, 11, light)
+        vline(buf, w, 8, 4, 12, (*dark, 255))
+    elif name == "apex_leggings":
+        rect(buf, w, 4, 2, 12, 7, mid)
+        rect(buf, w, 4, 7, 8, 15, dark)
+        rect(buf, w, 8, 7, 12, 15, dark)
+        vline(buf, w, 8, 7, 15, (*light, 255))
+    elif name == "apex_boots":
+        rect(buf, w, 3, 8, 7, 15, mid)
+        rect(buf, w, 9, 8, 13, 15, mid)
+        rect(buf, w, 2, 13, 8, 16, dark)
+        rect(buf, w, 8, 13, 14, 16, dark)
+    else:
+        # Generic high-tech component: dark carrier, colored core and contacts.
+        rect(buf, w, 3, 3, 13, 13, dark)
+        rect(buf, w, 5, 5, 11, 11, mid)
+        rect(buf, w, 7, 7, 9, 9, light)
+        for i in range(4, 13, 2):
+            px(buf, w, i, 2, (*light, 255))
+            px(buf, w, i, 13, (*light, 255))
+    return bytes(buf)
+
+
+def block_texture(name: str) -> bytes:
+    w = h = 16
+    buf = bytearray(w * h * 4)
+    bases = {
+        "apex_alloy_block": (20, 140, 150),
+        "icbm_silo": (50, 55, 60),
+        "slbm_tube": (30, 60, 110),
+        "cruise_pad": (50, 80, 40),
+        "sam_battery": (120, 100, 40),
+        "radar": (40, 90, 130),
+    }
+    # Python randomizes hash() between processes, so use a stable seed to keep
+    # generated resources reproducible across developer machines and CI.
+    if "concrete" in name:
+        fallback = (80, 84, 86)
+    elif "laser" in name or "capacitor" in name:
+        fallback = (35, 95, 115)
+    elif name == "bunker_glass":
+        fallback = (75, 145, 165)
+    else:
+        fallback = (55, 65, 70)
+    noise_metal(buf, w, h, bases.get(name, fallback), zlib.crc32(name.encode("utf-8")) & 255)
+    if name == "icbm_silo":
+        rect(buf, w, 4, 4, 12, 12, (20, 20, 22, 255))
+        rect(buf, w, 6, 2, 10, 14, (180, 180, 190, 255))
+        hline(buf, w, 6, 10, 6, (200, 40, 40, 255))
+    elif name == "slbm_tube":
+        rect(buf, w, 5, 1, 11, 15, (20, 40, 80, 255))
+        rect(buf, w, 6, 2, 10, 14, (80, 160, 220, 255))
+    elif name == "cruise_pad":
+        rect(buf, w, 1, 12, 15, 15, (30, 30, 30, 255))
+        rect(buf, w, 6, 4, 10, 13, (90, 140, 50, 255))
+    elif name == "sam_battery":
+        rect(buf, w, 2, 10, 14, 15, (40, 40, 40, 255))
+        rect(buf, w, 7, 2, 10, 12, (210, 180, 70, 255))
+        px(buf, w, 5, 6, (210, 180, 70, 255))
+        px(buf, w, 11, 6, (210, 180, 70, 255))
+    elif name == "radar":
+        rect(buf, w, 7, 8, 9, 16, (30, 30, 30, 255))
+        rect(buf, w, 3, 3, 13, 9, (80, 200, 230, 255))
+        hline(buf, w, 3, 13, 6, (20, 40, 50, 255))
+    elif name == "apex_alloy_block":
+        for i in range(0, 16, 4):
+            hline(buf, w, 0, 16, i, (10, 60, 70, 255))
+            vline(buf, w, i, 0, 16, (10, 60, 70, 255))
+        rect(buf, w, 6, 6, 10, 10, (180, 255, 255, 255))
+    else:
+        hline(buf, w, 0, 16, 3, (25, 30, 34, 255))
+        hline(buf, w, 0, 16, 12, (25, 30, 34, 255))
+        vline(buf, w, 3, 0, 16, (25, 30, 34, 255))
+        vline(buf, w, 12, 0, 16, (25, 30, 34, 255))
+        if name == "hazard_concrete":
+            for i in range(-8, 24, 6):
+                for y in range(16):
+                    x = i + y
+                    if 0 <= x < 16:
+                        px(buf, w, x, y, (230, 185, 25, 255))
+    return bytes(buf)
+
+
+def armor_layer(layer: int) -> bytes:
+    w, h = 64, 32
+    buf = bytearray(w * h * 4)
+    fill(buf, w, h, (0, 0, 0, 0))
+    teal = (25, 120, 130, 255)
+    dark = (10, 40, 50, 255)
+    glow = (80, 230, 240, 255)
+
+    def box(x, y, bw, bh, color):
+        rect(buf, w, x, y, x + bw, y + bh, color)
+
+    if layer == 1:
+        # head
+        box(8, 0, 8, 8, teal)
+        box(8, 8, 8, 8, teal)
+        box(10, 10, 4, 3, glow)
+        # body
+        box(20, 16, 8, 12, teal)
+        box(20, 20, 8, 2, glow)
+        # arms
+        box(40, 16, 4, 12, teal)
+        box(44, 16, 4, 12, teal)
+        # legs
+        box(4, 16, 4, 12, dark)
+        box(8, 16, 4, 12, dark)
+        # overlay bits
+        box(21, 16, 6, 2, dark)
+    else:
+        # leggings layer
+        box(20, 16, 8, 12, teal)
+        box(4, 16, 4, 12, teal)
+        box(8, 16, 4, 12, teal)
+        box(20, 20, 8, 1, glow)
+    return bytes(buf)
+
+
+def missile_entity_texture() -> bytes:
+    """Neutral metal atlas tinted per missile type by the entity renderer."""
+    w, h = 64, 32
+    buf = bytearray(w * h * 4)
+    noise_metal(buf, w, h, (210, 218, 224), 73)
+    # Dark thermal shielding and panel seams make the cuboid model readable.
+    rect(buf, w, 0, 20, 64, 32, (62, 68, 72, 255))
+    for x in range(0, w, 8):
+        vline(buf, w, x, 0, h, (120, 128, 134, 255))
+    for y in (7, 15, 23):
+        hline(buf, w, 0, w, y, (105, 112, 118, 255))
+    rect(buf, w, 16, 0, 28, 8, (45, 48, 52, 255))
+    rect(buf, w, 28, 0, 44, 12, (150, 158, 164, 255))
+    return bytes(buf)
+
+
+def write_json(path: Path, obj) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(obj, indent=2) + "\n")
+
+
+def shaped(result: str, count: int, pattern: list[str], key: dict) -> dict:
+    return {
+        "type": "minecraft:crafting_shaped",
+        "category": "misc",
+        "key": key,
+        "pattern": pattern,
+        "result": {"count": count, "id": result},
+    }
+
+
+def shapeless(result: str, count: int, ingredients: list) -> dict:
+    return {
+        "type": "minecraft:crafting_shapeless",
+        "category": "misc",
+        "ingredients": ingredients,
+        "result": {"count": count, "id": result},
+    }
+
+
+def item_ing(item: str) -> dict:
+    return {"item": item}
+
+
+def main() -> None:
+    tex_item = ASSETS / "textures" / "item"
+    tex_block = ASSETS / "textures" / "block"
+    tex_armor = ASSETS / "textures" / "models" / "armor"
+    tex_entity = ASSETS / "textures" / "entity"
+    models_item = ASSETS / "models" / "item"
+    models_block = ASSETS / "models" / "block"
+    blockstates = ASSETS / "blockstates"
+
+    for name in ITEMS:
+        write_png(tex_item / f"{name}.png", 16, 16, item_texture(name))
+        parent = "minecraft:item/handheld" if name in HANDHELD else "minecraft:item/generated"
+        write_json(models_item / f"{name}.json", {
+            "parent": parent,
+            "textures": {"layer0": f"apexballistics:item/{name}"},
+        })
+
+    for name in BLOCKS:
+        write_png(tex_block / f"{name}.png", 16, 16, block_texture(name))
+        write_json(models_block / f"{name}.json", {
+            "parent": "minecraft:block/cube_all",
+            "textures": {"all": f"apexballistics:block/{name}"},
+        })
+        write_json(models_item / f"{name}.json", {"parent": f"apexballistics:block/{name}"})
+        if name in LAUNCHER_BLOCKS:
+            write_json(blockstates / f"{name}.json", {
+                "variants": {
+                    "facing=north": {"model": f"apexballistics:block/{name}"},
+                    "facing=south": {"model": f"apexballistics:block/{name}", "y": 180},
+                    "facing=west": {"model": f"apexballistics:block/{name}", "y": 270},
+                    "facing=east": {"model": f"apexballistics:block/{name}", "y": 90},
+                }
+            })
+        else:
+            write_json(blockstates / f"{name}.json", {
+                "variants": {"": {"model": f"apexballistics:block/{name}"}}
+            })
+
+    for name in DOORS:
+        write_png(tex_block / f"{name}_bottom.png", 16, 16, block_texture("blast_steel"))
+        write_png(tex_block / f"{name}_top.png", 16, 16, block_texture("command_console"))
+        variants = {}
+        closed_rotation = {"east": 0, "north": 270, "south": 90, "west": 180}
+        open_left_rotation = {"east": 90, "north": 0, "south": 180, "west": 270}
+        open_right_rotation = {"east": 270, "north": 180, "south": 0, "west": 90}
+        for facing in ("east", "north", "south", "west"):
+            for half in ("lower", "upper"):
+                for hinge in ("left", "right"):
+                    for opened in (False, True):
+                        suffix = f"{'bottom' if half == 'lower' else 'top'}_{hinge}"
+                        if opened:
+                            suffix += "_open"
+                        rotation = (open_left_rotation if hinge == "left" else open_right_rotation)[facing] \
+                            if opened else closed_rotation[facing]
+                        value = {"model": f"apexballistics:block/{name}_{suffix}"}
+                        if rotation:
+                            value["y"] = rotation
+                        key = f"facing={facing},half={half},hinge={hinge},open={str(opened).lower()}"
+                        variants[key] = value
+        write_json(blockstates / f"{name}.json", {"variants": variants})
+        for half in ("bottom", "top"):
+            for hinge in ("left", "right"):
+                for opened in (False, True):
+                    suffix = f"{half}_{hinge}" + ("_open" if opened else "")
+                    parent = f"minecraft:block/door_{suffix}"
+                    write_json(models_block / f"{name}_{suffix}.json", {
+                        "parent": parent,
+                        "textures": {
+                            "bottom": f"apexballistics:block/{name}_bottom",
+                            "top": f"apexballistics:block/{name}_top",
+                        },
+                    })
+        write_json(models_item / f"{name}.json", {
+            "parent": f"apexballistics:block/{name}_bottom_left"
+        })
+
+    for name in TRAPDOORS:
+        write_png(tex_block / f"{name}.png", 16, 16, block_texture("blast_steel"))
+        variants = {}
+        rotation = {"east": 90, "north": 0, "south": 180, "west": 270}
+        for facing in ("east", "north", "south", "west"):
+            for half in ("bottom", "top"):
+                for opened in (False, True):
+                    suffix = "open" if opened else half
+                    value = {"model": f"apexballistics:block/{name}_{suffix}"}
+                    if opened and rotation[facing]:
+                        value["y"] = rotation[facing]
+                    key = f"facing={facing},half={half},open={str(opened).lower()}"
+                    variants[key] = value
+        write_json(blockstates / f"{name}.json", {"variants": variants})
+        for suffix in ("bottom", "top", "open"):
+            write_json(models_block / f"{name}_{suffix}.json", {
+                "parent": f"minecraft:block/template_trapdoor_{suffix}",
+                "textures": {"texture": f"apexballistics:block/{name}"},
+            })
+        write_json(models_item / f"{name}.json", {
+            "parent": f"apexballistics:block/{name}_bottom"
+        })
+
+    write_png(tex_armor / "apex_composite_layer_1.png", 64, 32, armor_layer(1))
+    write_png(tex_armor / "apex_composite_layer_2.png", 64, 32, armor_layer(2))
+    write_png(tex_entity / "missile.png", 64, 32, missile_entity_texture())
+
+    recipes = DATA / "recipe"
+    recipes.mkdir(parents=True, exist_ok=True)
+
+    write_json(recipes / "apex_alloy.json", shaped("apexballistics:apex_alloy", 1, [
+        "IDI",
+        "NRN",
+        "IBI",
+    ], {
+        "I": item_ing("minecraft:iron_ingot"),
+        "D": item_ing("minecraft:diamond"),
+        "N": item_ing("minecraft:netherite_scrap"),
+        "R": item_ing("minecraft:redstone_block"),
+        "B": item_ing("minecraft:blaze_rod"),
+    }))
+    write_json(recipes / "apex_alloy_block.json", shaped("apexballistics:apex_alloy_block", 1, [
+        "AAA", "AAA", "AAA"
+    ], {"A": item_ing("apexballistics:apex_alloy")}))
+    write_json(recipes / "apex_alloy_from_block.json", shapeless("apexballistics:apex_alloy", 9, [
+        item_ing("apexballistics:apex_alloy_block")
+    ]))
+    write_json(recipes / "circuit_board.json", shaped("apexballistics:circuit_board", 2, [
+        "GRG",
+        "RCR",
+        "GRG",
+    ], {
+        "G": item_ing("minecraft:gold_ingot"),
+        "R": item_ing("minecraft:redstone"),
+        "C": item_ing("minecraft:copper_ingot"),
+    }))
+    write_json(recipes / "guidance_chip.json", shaped("apexballistics:guidance_chip", 1, [
+        "AEA",
+        "QCQ",
+        "AEA",
+    ], {
+        "A": item_ing("minecraft:amethyst_shard"),
+        "E": item_ing("minecraft:ender_eye"),
+        "Q": item_ing("minecraft:quartz"),
+        "C": item_ing("apexballistics:circuit_board"),
+    }))
+    write_json(recipes / "solid_fuel.json", shapeless("apexballistics:solid_fuel", 2, [
+        item_ing("minecraft:gunpowder"),
+        item_ing("minecraft:blaze_powder"),
+        item_ing("minecraft:coal"),
+        item_ing("minecraft:gunpowder"),
+    ]))
+    write_json(recipes / "warhead.json", shaped("apexballistics:warhead", 1, [
+        " T ",
+        "TGT",
+        " T ",
+    ], {
+        "T": item_ing("minecraft:tnt"),
+        "G": item_ing("minecraft:ghast_tear"),
+    }))
+    write_json(recipes / "gauss_slug.json", shapeless("apexballistics:gauss_slug", 4, [
+        item_ing("minecraft:iron_nugget"),
+        item_ing("minecraft:copper_ingot"),
+        item_ing("minecraft:redstone"),
+    ]))
+
+    def missile_recipe(name: str, extra: str) -> dict:
+        return shaped(f"apexballistics:{name}", 1, [
+            " A ",
+            "FWE",
+            " G ",
+        ], {
+            "A": item_ing("apexballistics:apex_alloy"),
+            "F": item_ing("apexballistics:solid_fuel"),
+            "W": item_ing("apexballistics:warhead"),
+            "E": item_ing(extra),
+            "G": item_ing("apexballistics:guidance_chip"),
+        })
+
+    write_json(recipes / "icbm.json", missile_recipe("icbm", "minecraft:nether_star"))
+    write_json(recipes / "slbm.json", missile_recipe("slbm", "minecraft:heart_of_the_sea"))
+    write_json(recipes / "srbm.json", missile_recipe("srbm", "minecraft:fire_charge"))
+    write_json(recipes / "alcm.json", missile_recipe("alcm", "minecraft:phantom_membrane"))
+    write_json(recipes / "cruise_missile.json", missile_recipe("cruise_missile", "minecraft:compass"))
+    write_json(recipes / "sam.json", missile_recipe("sam", "minecraft:ender_pearl"))
+    write_json(recipes / "aam.json", missile_recipe("aam", "minecraft:feather"))
+
+    write_json(recipes / "icbm_silo.json", shaped("apexballistics:icbm_silo", 1, [
+        "AIA",
+        "ODO",
+        "ARA",
+    ], {
+        "A": item_ing("apexballistics:apex_alloy"),
+        "I": item_ing("minecraft:iron_block"),
+        "O": item_ing("minecraft:obsidian"),
+        "D": item_ing("minecraft:dispenser"),
+        "R": item_ing("apexballistics:circuit_board"),
+    }))
+    write_json(recipes / "slbm_tube.json", shaped("apexballistics:slbm_tube", 1, [
+        "AHA",
+        "PDP",
+        "ARA",
+    ], {
+        "A": item_ing("apexballistics:apex_alloy"),
+        "H": item_ing("minecraft:heart_of_the_sea"),
+        "P": item_ing("minecraft:prismarine_shard"),
+        "D": item_ing("minecraft:dispenser"),
+        "R": item_ing("apexballistics:circuit_board"),
+    }))
+    write_json(recipes / "cruise_pad.json", shaped("apexballistics:cruise_pad", 1, [
+        " A ",
+        "IDI",
+        "ARA",
+    ], {
+        "A": item_ing("apexballistics:apex_alloy"),
+        "I": item_ing("minecraft:iron_ingot"),
+        "D": item_ing("minecraft:dispenser"),
+        "R": item_ing("apexballistics:circuit_board"),
+    }))
+    write_json(recipes / "sam_battery.json", shaped("apexballistics:sam_battery", 1, [
+        " A ",
+        "ODO",
+        "ARA",
+    ], {
+        "A": item_ing("apexballistics:apex_alloy"),
+        "O": item_ing("minecraft:observer"),
+        "D": item_ing("minecraft:dispenser"),
+        "R": item_ing("apexballistics:guidance_chip"),
+    }))
+    write_json(recipes / "radar.json", shaped("apexballistics:radar", 1, [
+        " Q ",
+        "ACA",
+        "IRI",
+    ], {
+        "Q": item_ing("minecraft:ender_eye"),
+        "A": item_ing("apexballistics:apex_alloy"),
+        "C": item_ing("apexballistics:circuit_board"),
+        "I": item_ing("minecraft:iron_ingot"),
+        "R": item_ing("minecraft:redstone_block"),
+    }))
+    write_json(recipes / "targeting_tablet.json", shaped("apexballistics:targeting_tablet", 1, [
+        "GGG",
+        "GCG",
+        "GGG",
+    ], {
+        "G": item_ing("minecraft:glass_pane"),
+        "C": item_ing("apexballistics:guidance_chip"),
+    }))
+    write_json(recipes / "manpads.json", shaped("apexballistics:manpads", 1, [
+        "A  ",
+        "ICI",
+        "  A",
+    ], {
+        "A": item_ing("apexballistics:apex_alloy"),
+        "I": item_ing("minecraft:iron_ingot"),
+        "C": item_ing("apexballistics:circuit_board"),
+    }))
+    write_json(recipes / "gauss_rifle.json", shaped("apexballistics:gauss_rifle", 1, [
+        "ACC",
+        "NRI",
+        "  I",
+    ], {
+        "A": item_ing("apexballistics:apex_alloy"),
+        "C": item_ing("minecraft:copper_ingot"),
+        "N": item_ing("minecraft:netherite_ingot"),
+        "R": item_ing("minecraft:redstone_block"),
+        "I": item_ing("minecraft:iron_ingot"),
+    }))
+    write_json(recipes / "railgun.json", shaped("apexballistics:railgun", 1, [
+        "AEE",
+        "NGC",
+        "  A",
+    ], {
+        "A": item_ing("apexballistics:apex_alloy"),
+        "E": item_ing("minecraft:echo_shard"),
+        "N": item_ing("minecraft:netherite_ingot"),
+        "G": item_ing("apexballistics:gauss_rifle"),
+        "C": item_ing("apexballistics:guidance_chip"),
+    }))
+    write_json(recipes / "plasma_blade.json", shaped("apexballistics:plasma_blade", 1, [
+        "  B",
+        " A ",
+        "S  ",
+    ], {
+        "B": item_ing("minecraft:blaze_rod"),
+        "A": item_ing("apexballistics:apex_alloy"),
+        "S": item_ing("minecraft:netherite_sword"),
+    }))
+    write_json(recipes / "apex_helmet.json", shaped("apexballistics:apex_helmet", 1, [
+        "AAA", "A A"
+    ], {"A": item_ing("apexballistics:apex_alloy")}))
+    write_json(recipes / "apex_chestplate.json", shaped("apexballistics:apex_chestplate", 1, [
+        "A A", "AAA", "AAA"
+    ], {"A": item_ing("apexballistics:apex_alloy")}))
+    write_json(recipes / "apex_leggings.json", shaped("apexballistics:apex_leggings", 1, [
+        "AAA", "A A", "A A"
+    ], {"A": item_ing("apexballistics:apex_alloy")}))
+    write_json(recipes / "apex_boots.json", shaped("apexballistics:apex_boots", 1, [
+        "A A", "A A"
+    ], {"A": item_ing("apexballistics:apex_alloy")}))
+
+    write_json(recipes / "advanced_propellant.json", shapeless("apexballistics:advanced_propellant", 2, [
+        item_ing("apexballistics:solid_fuel"), item_ing("minecraft:blaze_powder"),
+        item_ing("minecraft:redstone"),
+    ]))
+    write_json(recipes / "energy_cell.json", shaped("apexballistics:energy_cell", 2, [
+        "ACA", "RER", "ACA"
+    ], {
+        "A": item_ing("apexballistics:apex_alloy"),
+        "C": item_ing("minecraft:copper_ingot"),
+        "R": item_ing("minecraft:redstone"),
+        "E": item_ing("minecraft:ender_pearl"),
+    }))
+    write_json(recipes / "capacitor.json", shaped("apexballistics:capacitor", 2, [
+        "CRC", "AEA", "CRC"
+    ], {
+        "C": item_ing("minecraft:copper_ingot"),
+        "R": item_ing("minecraft:redstone"),
+        "A": item_ing("apexballistics:apex_alloy"),
+        "E": item_ing("apexballistics:energy_cell"),
+    }))
+    write_json(recipes / "interceptor.json", missile_recipe("interceptor", "minecraft:nether_star"))
+
+    module_ingredients = {
+        "guidance_inertial": "minecraft:compass",
+        "guidance_coordinate": "minecraft:recovery_compass",
+        "guidance_terrain": "minecraft:filled_map",
+        "guidance_radar": "minecraft:ender_eye",
+        "guidance_infrared": "minecraft:magma_cream",
+        "guidance_command": "minecraft:comparator",
+        "emp_payload": "minecraft:lightning_rod",
+        "incendiary_payload": "minecraft:fire_charge",
+        "penetrator_payload": "minecraft:netherite_ingot",
+        "fragmentation_payload": "minecraft:iron_nugget",
+        "decoy_warhead": "minecraft:firework_rocket",
+        "mirv_warhead": "minecraft:nether_star",
+        "proximity_fuse": "minecraft:observer",
+        "airburst_fuse": "minecraft:daylight_detector",
+        "delayed_fuse": "minecraft:repeater",
+        "two_stage_motor": "apexballistics:advanced_propellant",
+        "three_stage_motor": "minecraft:dragon_breath",
+        "precision_package": "minecraft:amethyst_shard",
+        "reliability_package": "minecraft:netherite_scrap",
+        "anti_jam_module": "minecraft:echo_shard",
+    }
+    for name, ingredient in module_ingredients.items():
+        write_json(recipes / f"{name}.json", shapeless(f"apexballistics:{name}", 1, [
+            item_ing("apexballistics:guidance_chip"),
+            item_ing("apexballistics:circuit_board"),
+            item_ing(ingredient),
+        ]))
+
+    write_json(recipes / "flare.json", shapeless("apexballistics:flare", 4, [
+        item_ing("minecraft:firework_rocket"), item_ing("minecraft:blaze_powder"),
+        item_ing("minecraft:glowstone_dust"),
+    ]))
+    write_json(recipes / "jammer.json", shaped("apexballistics:jammer", 1, [
+        "ACA", "EGE", "ACA"
+    ], {
+        "A": item_ing("apexballistics:apex_alloy"),
+        "C": item_ing("apexballistics:circuit_board"),
+        "E": item_ing("minecraft:echo_shard"),
+        "G": item_ing("apexballistics:guidance_chip"),
+    }))
+
+    armor_modules = {
+        "thermal_module": "minecraft:magma_cream",
+        "rwr_module": "minecraft:bell",
+        "shield_module": "minecraft:shield",
+        "mobility_module": "minecraft:elytra",
+        "camouflage_module": "minecraft:invisibility_potion",
+        "medical_module": "minecraft:golden_apple",
+    }
+    # Potion item identifiers cannot encode potion NBT in this simple recipe;
+    # use fermented spider eye as the camouflage electronics reagent.
+    armor_modules["camouflage_module"] = "minecraft:fermented_spider_eye"
+    for name, ingredient in armor_modules.items():
+        write_json(recipes / f"{name}.json", shapeless(f"apexballistics:{name}", 1, [
+            item_ing("apexballistics:capacitor"),
+            item_ing("apexballistics:circuit_board"),
+            item_ing(ingredient),
+        ]))
+
+    infrastructure = [
+        "mobile_launcher", "vls", "missile_assembly", "ciws", "laser_defense",
+        "passive_radar", "command_console", "submarine_control", "missile_rack",
+        "loading_crane", "propellant_refinery", "maintenance_station",
+        "capacitor_charger",
+    ]
+    for name in infrastructure:
+        write_json(recipes / f"{name}.json", shaped(f"apexballistics:{name}", 1, [
+            "ACA", "IRI", "AAA"
+        ], {
+            "A": item_ing("apexballistics:apex_alloy"),
+            "C": item_ing("apexballistics:circuit_board"),
+            "I": item_ing("minecraft:iron_block"),
+            "R": item_ing("minecraft:redstone_block"),
+        }))
+
+    concrete_colors = {
+        "reinforced_concrete": "minecraft:gray_concrete",
+        "white_reinforced_concrete": "minecraft:white_concrete",
+        "black_reinforced_concrete": "minecraft:black_concrete",
+        "olive_reinforced_concrete": "minecraft:green_concrete",
+        "hazard_concrete": "minecraft:yellow_concrete",
+    }
+    for name, concrete in concrete_colors.items():
+        write_json(recipes / f"{name}.json", shaped(f"apexballistics:{name}", 4, [
+            "I I", "CBC", "I I"
+        ], {
+            "I": item_ing("minecraft:iron_ingot"),
+            "C": item_ing(concrete),
+            "B": item_ing("minecraft:obsidian"),
+        }))
+    write_json(recipes / "blast_steel.json", shaped("apexballistics:blast_steel", 4, [
+        "IAI", "ANA", "IAI"
+    ], {
+        "I": item_ing("minecraft:iron_block"),
+        "A": item_ing("apexballistics:apex_alloy"),
+        "N": item_ing("minecraft:netherite_scrap"),
+    }))
+    write_json(recipes / "bunker_glass.json", shaped("apexballistics:bunker_glass", 4, [
+        "AGA", "GOG", "AGA"
+    ], {
+        "A": item_ing("apexballistics:apex_alloy"),
+        "G": item_ing("minecraft:glass"),
+        "O": item_ing("minecraft:obsidian"),
+    }))
+    for name in DOORS:
+        write_json(recipes / f"{name}.json", shaped(f"apexballistics:{name}", 1, [
+            "SS", "CC", "SS"
+        ], {
+            "S": item_ing("apexballistics:blast_steel"),
+            "C": item_ing("apexballistics:circuit_board"),
+        }))
+    write_json(recipes / "silo_hatch.json", shaped("apexballistics:silo_hatch", 1, [
+        "SSS", "CAC"
+    ], {
+        "S": item_ing("apexballistics:blast_steel"),
+        "C": item_ing("apexballistics:circuit_board"),
+        "A": item_ing("apexballistics:apex_alloy"),
+    }))
+
+    loot = DATA / "loot_table" / "blocks"
+    for name in ALL_BLOCKS:
+        write_json(loot / f"{name}.json", {
+            "type": "minecraft:block",
+            "pools": [{
+                "bonus_rolls": 0.0,
+                "conditions": [{"condition": "minecraft:survives_explosion"}],
+                "entries": [{"type": "minecraft:item", "name": f"apexballistics:{name}"}],
+                "rolls": 1.0,
+            }],
+        })
+
+    write_json(MC_DATA / "tags" / "block" / "mineable" / "pickaxe.json", {
+        "replace": False,
+        "values": [f"apexballistics:{n}" for n in ALL_BLOCKS],
+    })
+    write_json(MC_DATA / "tags" / "block" / "needs_iron_tool.json", {
+        "replace": False,
+        "values": [f"apexballistics:{n}" for n in ALL_BLOCKS],
+    })
+
+    lang_path = ASSETS / "lang" / "en_us.json"
+    lang = json.loads(lang_path.read_text()) if lang_path.exists() else {}
+    display_overrides = {
+        "icbm": "ICBM", "slbm": "SLBM", "srbm": "SRBM", "alcm": "ALCM",
+        "sam": "SAM", "aam": "AAM", "vls": "Vertical Launch System",
+        "ciws": "CIWS Point Defense", "rwr_module": "Radar Warning Module",
+        "mirv_warhead": "MIRV Warhead", "emp_payload": "EMP Payload",
+        "anti_jam_module": "Anti-Jam Module", "jammer": "Electronic Jammer",
+    }
+    for name in ITEMS:
+        lang[f"item.apexballistics.{name}"] = display_overrides.get(
+            name, name.replace("_", " ").title())
+    for name in ALL_BLOCKS:
+        lang[f"block.apexballistics.{name}"] = display_overrides.get(
+            name, name.replace("_", " ").title())
+    lang["entity.apexballistics.flare"] = "Countermeasure Flare"
+    lang["item.apexballistics.interceptor.desc"] = "High-altitude interceptor optimized for hostile missiles."
+    lang["item.apexballistics.missile_module.desc"] = "Install at a Missile Assembly Station."
+    lang["item.apexballistics.jammer.desc"] = "Disrupts nearby radar guidance while active; consumes durability."
+    lang["item.apexballistics.armor_module.install"] = "Install at a Maintenance Station."
+    module_descriptions = {
+        "thermal": "Highlights living heat signatures within 24 blocks.",
+        "rwr": "Warns when a guided missile is tracking the wearer.",
+        "shield": "Consumes suit energy to reduce incoming damage.",
+        "mobility": "Crouch while airborne for a powered vertical boost.",
+        "camouflage": "Crouching activates energy-consuming optical camouflage.",
+        "medical": "Automatically stabilizes critically injured wearers.",
+    }
+    for module, description in module_descriptions.items():
+        lang[f"item.apexballistics.armor_module.{module}.desc"] = description
+    lang.update({
+        "tooltip.apexballistics.guidance": "Guidance: %s",
+        "tooltip.apexballistics.payload": "Payload: %s",
+        "tooltip.apexballistics.fuse": "Fuse: %s",
+        "tooltip.apexballistics.reliability": "Reliability: %s%%",
+        "tooltip.apexballistics.module": "Module: %s / %s",
+        "tooltip.apexballistics.waypoints": "Programmed waypoints: %s",
+        "tooltip.apexballistics.airburst_height": "Programmed airburst height: %s blocks",
+        "tooltip.apexballistics.energy": "Suit energy: %s / %s",
+        "tooltip.apexballistics.armor_module": "Installed module: %s",
+        "tooltip.apexballistics.heat": "Heat: %s / %s",
+        "tooltip.apexballistics.active": "ACTIVE",
+        "tooltip.apexballistics.inactive": "Inactive",
+        "message.apexballistics.waypoint_added": "Waypoint added: %s, %s, %s",
+        "message.apexballistics.airburst_height": "Airburst height set to %s blocks.",
+        "message.apexballistics.assembly_no_missile": "Carry a missile to install this module.",
+        "message.apexballistics.module_installed": "Installed %s into %s.",
+        "message.apexballistics.missile_spec": "Guidance %s | Payload %s | Fuse %s | %s stage(s) | %s%% reliable",
+        "message.apexballistics.missile_warning": "MISSILE WARNING: incoming %s",
+        "message.apexballistics.jammer_on": "Electronic jammer active.",
+        "message.apexballistics.jammer_off": "Electronic jammer off.",
+        "message.apexballistics.overheated": "Weapon overheated. Allow it to cool.",
+        "message.apexballistics.radar_emp": "Radar disabled by EMP.",
+        "message.apexballistics.passive_contacts": "Passive detector: %s missile emissions.",
+        "message.apexballistics.system_status": "Energy %s | Integrity %s%% | EMP lockout %s ticks",
+        "message.apexballistics.rack_status": "Missile rack: %s × %s",
+        "message.apexballistics.maintenance_complete": "Missile serviced to full reliability.",
+        "message.apexballistics.armor_module_installed": "Installed armor module: %s",
+        "message.apexballistics.maintenance_launchers": "Nearby launcher components repaired.",
+        "message.apexballistics.charger_invalid": "Hold Apex armor, a gauss rifle, or a railgun.",
+        "message.apexballistics.charged": "Equipment charged and cooled.",
+        "message.apexballistics.refinery_input": "Insert blaze powder to refine advanced propellant.",
+        "message.apexballistics.crane_needs_missile": "Hold a missile for crane loading.",
+        "message.apexballistics.crane_loaded": "Crane loaded a nearby compatible launcher.",
+        "message.apexballistics.crane_no_launcher": "No compatible launcher within crane reach.",
+        "message.apexballistics.submarine_status": "Submarine control: %s submerged SLBM tube(s) linked.",
+        "message.apexballistics.command_status": "Network tracks %s missiles (%s hostile). Faction: %s",
+    })
+    write_json(lang_path, lang)
+    print("generated assets")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "C": {
+      "item": "minecraft:gray_concrete"
+    },
+    "B": {
+      "item": "minecraft:obsidian"
+    }
+  },
+  "pattern": [
+    "I I",
+    "CBC",
+    "I I"
+  ],
+  "result": {
+    "count": 4,
+    "id": "apexballistics:reinforced_concrete"
+  }
+}

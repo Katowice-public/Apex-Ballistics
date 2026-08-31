@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "apexballistics:guidance_chip"
+    },
+    {
+      "item": "apexballistics:circuit_board"
+    },
+    {
+      "item": "minecraft:recovery_compass"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:guidance_coordinate"
+  }
+}

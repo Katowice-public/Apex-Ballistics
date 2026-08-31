@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "apexballistics:block/white_reinforced_concrete"
+  }
+}

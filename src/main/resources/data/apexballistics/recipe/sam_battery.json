@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "apexballistics:apex_alloy"
+    },
+    "O": {
+      "item": "minecraft:observer"
+    },
+    "D": {
+      "item": "minecraft:dispenser"
+    },
+    "R": {
+      "item": "apexballistics:guidance_chip"
+    }
+  },
+  "pattern": [
+    " A ",
+    "ODO",
+    "ARA"
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:sam_battery"
+  }
+}

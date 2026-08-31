@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "apexballistics:apex_alloy_block"
+    }
+  ],
+  "result": {
+    "count": 9,
+    "id": "apexballistics:apex_alloy"
+  }
+}

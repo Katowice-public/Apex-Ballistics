@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "apexballistics:apex_alloy"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "D": {
+      "item": "minecraft:dispenser"
+    },
+    "R": {
+      "item": "apexballistics:circuit_board"
+    }
+  },
+  "pattern": [
+    " A ",
+    "IDI",
+    "ARA"
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:cruise_pad"
+  }
+}
