@@ -26,6 +26,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.server.level.ServerPlayer;
 import org.jetbrains.annotations.Nullable;
 
 public class LauncherBlock extends Block implements EntityBlock {
@@ -136,10 +137,8 @@ public class LauncherBlock extends Block implements EntityBlock {
             }
             return InteractionResult.CONSUME;
         }
-        if (launcher.getMissile().isEmpty()) {
-            player.displayClientMessage(Component.translatable("message.apexballistics.empty").withStyle(ChatFormatting.GRAY), true);
-        } else {
-            player.displayClientMessage(Component.translatable("message.apexballistics.status", launcher.getMissile().getHoverName()), true);
+        if (player instanceof ServerPlayer serverPlayer) {
+            serverPlayer.openMenu(launcher, pos);
         }
         return InteractionResult.CONSUME;
     }

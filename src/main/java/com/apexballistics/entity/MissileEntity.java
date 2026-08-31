@@ -11,6 +11,7 @@ import com.apexballistics.item.MissileSpecification;
 import com.apexballistics.item.PayloadType;
 import com.apexballistics.item.PoweredEquipment;
 import com.apexballistics.registry.ModItems;
+import com.apexballistics.registry.ModSounds;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -260,6 +261,12 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
         }
 
         updateStage(kind);
+        if (!level().isClientSide && flightAge % 36 == 1) {
+            level().playSound(null, blockPosition(), ModSounds.MISSILE_FLIGHT.get(),
+                    SoundSource.HOSTILE,
+                    kind.profile() == MissileKind.FlightProfile.BALLISTIC ? 2.8f : 1.7f,
+                    kind.profile() == MissileKind.FlightProfile.HOMING_AIR ? 1.22f : 0.92f);
+        }
         if (payload == PayloadType.DECOY && !mirvDeployed && flightAge > 40) {
             deployDecoys();
             return;
@@ -592,9 +599,13 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
                 ApexConfig.missileGriefing ? Level.ExplosionInteraction.TNT : Level.ExplosionInteraction.NONE);
         if (level() instanceof ServerLevel serverLevel) {
             serverLevel.sendParticles(ParticleTypes.EXPLOSION_EMITTER, getX(), getY(), getZ(), 1, 0, 0, 0, 0);
-            if (kind == MissileKind.ICBM || kind == MissileKind.SLBM) {
-                serverLevel.playSound(null, blockPosition(), SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS, 6.0f, 0.6f);
-            }
+            serverLevel.playSound(null, blockPosition(),
+                    kind == MissileKind.ICBM || kind == MissileKind.SLBM
+                            ? ModSounds.HEAVY_EXPLOSION.get()
+                            : ModSounds.LIGHT_EXPLOSION.get(),
+                    SoundSource.BLOCKS,
+                    kind == MissileKind.ICBM || kind == MissileKind.SLBM ? 8.0f : 4.0f,
+                    kind == MissileKind.ICBM || kind == MissileKind.SLBM ? 0.72f : 1.0f);
         }
         discard();
     }

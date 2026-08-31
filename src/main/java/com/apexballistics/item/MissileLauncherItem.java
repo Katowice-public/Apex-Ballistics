@@ -2,9 +2,9 @@ package com.apexballistics.item;
 
 import com.apexballistics.entity.MissileEntity;
 import com.apexballistics.registry.ModEntities;
+import com.apexballistics.registry.ModSounds;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -49,7 +49,8 @@ public class MissileLauncherItem extends Item {
             missile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0f, kind.launchSpeed() + 0.4f, 0.15f);
             missile.acquireAirTarget(player);
             level.addFreshEntity(missile);
-            level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.PLAYERS, 1.4f, 0.85f);
+            level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                    ModSounds.INTERCEPTOR_LAUNCH.get(), SoundSource.PLAYERS, 2.4f, 1.0f);
             launcher.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
             if (!player.getAbilities().instabuild && !ammo.isEmpty()) {
                 ammo.shrink(1);

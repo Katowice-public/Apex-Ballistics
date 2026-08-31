@@ -7,18 +7,21 @@ import com.apexballistics.defense.FactionRelations;
 import com.apexballistics.entity.MissileEntity;
 import com.apexballistics.item.MissileItem;
 import com.apexballistics.item.MissileKind;
+import com.apexballistics.menu.LauncherMenu;
 import com.apexballistics.registry.ModBlockEntities;
 import com.apexballistics.registry.ModEntities;
 import com.apexballistics.registry.ModBlocks;
+import com.apexballistics.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
-import net.minecraft.sounds.SoundEvents;
+import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Containers;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ambient.Bat;
@@ -31,6 +34,8 @@ import net.minecraft.world.entity.monster.Ghast;
 import net.minecraft.world.entity.monster.Phantom;
 import net.minecraft.world.entity.monster.Vex;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.TrapDoorBlock;
@@ -44,7 +49,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
+public class LauncherBlockEntity extends BlockEntity implements EmpSensitive, MenuProvider {
     private ItemStack missile = ItemStack.EMPTY;
     private BlockPos target;
     private List<BlockPos> waypoints = List.of();
@@ -61,6 +66,27 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
 
     public ItemStack getMissile() {
         return missile;
+    }
+
+    public int getCooldown() {
+        return cooldown;
+    }
+
+    public int getIntegrity() {
+        return integrity;
+    }
+
+    public int getEmpTicks() {
+        return empTicks;
+    }
+
+    public int getProgrammedAirburstHeight() {
+        return programmedAirburstHeight;
+    }
+
+    @Nullable
+    public BlockPos getTarget() {
+        return target;
     }
 
     public void setMissile(ItemStack missile) {
@@ -193,7 +219,14 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
         }
 
         level.addFreshEntity(entity);
-        level.playSound(null, worldPosition, SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.BLOCKS, 1.6f, 0.6f);
+        net.minecraft.sounds.SoundEvent launchSound = switch (kind.profile()) {
+            case BALLISTIC -> ModSounds.BALLISTIC_LAUNCH.get();
+            case CRUISE -> ModSounds.CRUISE_LAUNCH.get();
+            case HOMING_AIR -> ModSounds.INTERCEPTOR_LAUNCH.get();
+        };
+        level.playSound(null, worldPosition, launchSound, SoundSource.BLOCKS,
+                kind.profile() == MissileKind.FlightProfile.BALLISTIC ? 4.0f : 2.4f,
+                0.92f + randomPitch(kind));
         missile.shrink(1);
         if (missile.isEmpty()) {
             missile = ItemStack.EMPTY;
@@ -201,6 +234,11 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
         cooldown = launcherType() == LauncherType.SAM_BATTERY ? 80 : 40;
         setChangedAndSync();
         return true;
+    }
+
+    private float randomPitch(MissileKind kind) {
+        int seed = worldPosition.hashCode() ^ kind.ordinal() * 31;
+        return (seed & 15) / 100.0f;
     }
 
     private void DirectionLaunch(MissileEntity entity, MissileKind kind) {
@@ -282,6 +320,16 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
         if (!player.getAbilities().instabuild) {
             stack.shrink(1);
         }
+        setChangedAndSync();
+        return true;
+    }
+
+    public boolean ejectMissile(Player player) {
+        if (missile.isEmpty()) {
+            return false;
+        }
+        player.getInventory().placeItemBackInInventory(missile.copy());
+        missile = ItemStack.EMPTY;
         setChangedAndSync();
         return true;
     }
@@ -411,5 +459,17 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive {
     @Override
     public Packet<ClientGamePacketListener> getUpdatePacket() {
         return ClientboundBlockEntityDataPacket.create(this);
+    }
+
+    @Override
+    public Component getDisplayName() {
+        return Component.translatable("screen.apexballistics.launcher."
+                + launcherType().name().toLowerCase());
+    }
+
+    @Nullable
+    @Override
+    public AbstractContainerMenu createMenu(int containerId, Inventory inventory, Player player) {
+        return new LauncherMenu(containerId, inventory, this);
     }
 }

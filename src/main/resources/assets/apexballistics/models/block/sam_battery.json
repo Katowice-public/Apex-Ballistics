@@ -1,6 +1,11 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "loader": "forge:obj",
+  "model": "apexballistics:models/block/sam_battery.obj",
+  "flip_v": true,
+  "automatic_culling": false,
+  "shade_quads": true,
   "textures": {
-    "all": "apexballistics:block/sam_battery"
+    "texture0": "apexballistics:block/sam_battery",
+    "particle": "apexballistics:block/sam_battery"
   }
 }

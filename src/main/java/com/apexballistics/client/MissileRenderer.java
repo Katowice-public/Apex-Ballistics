@@ -7,19 +7,20 @@ import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
+import net.minecraft.client.renderer.entity.ItemRenderer;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.phys.Vec3;
 
 public class MissileRenderer extends EntityRenderer<MissileEntity> {
-    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
-            "apexballistics", "textures/entity/missile.png");
-    private final MissileModel model;
+    private final ItemRenderer itemRenderer;
 
     public MissileRenderer(EntityRendererProvider.Context context) {
         super(context);
-        this.model = new MissileModel(context.bakeLayer(MissileModel.LAYER));
+        this.itemRenderer = context.getItemRenderer();
         this.shadowRadius = 0.45f;
     }
 
@@ -33,25 +34,32 @@ public class MissileRenderer extends EntityRenderer<MissileEntity> {
             poseStack.mulPose(Axis.YP.rotationDegrees(yRot));
             poseStack.mulPose(Axis.XP.rotationDegrees(-xRot + 90.0f));
         }
+        float age = entity.tickCount + partialTicks;
+        float ignition = Mth.clamp(age / 12.0f, 0.0f, 1.0f);
+        poseStack.translate(0.0, (1.0f - ignition) * Mth.sin(age * 2.8f) * 0.05f, 0.0);
+        if (entity.getKind().profile() == com.apexballistics.item.MissileKind.FlightProfile.BALLISTIC) {
+            poseStack.mulPose(Axis.YP.rotation(age * 0.055f));
+        } else {
+            poseStack.mulPose(Axis.ZP.rotation(Mth.sin(age * 0.22f) * 0.035f));
+            poseStack.mulPose(Axis.XP.rotation(Mth.cos(age * 0.17f) * 0.025f));
+        }
         float scale = switch (entity.getKind()) {
-            case ICBM -> 0.19f;
-            case SLBM -> 0.175f;
-            case SRBM -> 0.15f;
-            case ALCM, CRUISE -> 0.13f;
-            case SAM, AAM, INTERCEPTOR -> 0.11f;
+            case ICBM -> 1.30f;
+            case SLBM -> 1.20f;
+            case SRBM -> 1.05f;
+            case ALCM, CRUISE -> 0.90f;
+            case SAM, AAM, INTERCEPTOR -> 0.82f;
         };
-        poseStack.scale(scale, scale, scale);
-        model.setupAnim(entity, 0.0f, 0.0f, entity.tickCount + partialTicks, 0.0f, 0.0f);
-        int color = 0xFF000000 | entity.getKind().trailColor();
         int light = entity.tickCount < 14 ? LightTexture.FULL_BRIGHT : packedLight;
-        model.renderToBuffer(poseStack, buffer.getBuffer(model.renderType(TEXTURE)),
-                light, OverlayTexture.NO_OVERLAY, color);
+        poseStack.scale(scale, scale, scale);
+        itemRenderer.renderStatic(entity.getRenderStack(), ItemDisplayContext.FIXED,
+                light, OverlayTexture.NO_OVERLAY, poseStack, buffer, entity.level(), entity.getId());
         poseStack.popPose();
         super.render(entity, entityYaw, partialTicks, poseStack, buffer, packedLight);
     }
 
     @Override
     public ResourceLocation getTextureLocation(MissileEntity entity) {
-        return TEXTURE;
+        return InventoryMenu.BLOCK_ATLAS;
     }
 }

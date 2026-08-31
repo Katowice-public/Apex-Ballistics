@@ -1,0 +1,12 @@
+newmtl body
+Kd 0.82 0.86 0.88
+map_Kd #texture0
+newmtl dark
+Kd 0.18 0.20 0.22
+map_Kd #texture0
+newmtl accent
+Kd 0.82 0.20 0.12
+map_Kd #texture0
+newmtl glass
+Kd 0.20 0.70 0.84
+map_Kd #texture0

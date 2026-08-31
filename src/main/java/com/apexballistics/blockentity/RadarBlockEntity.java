@@ -4,6 +4,7 @@ import com.apexballistics.entity.MissileEntity;
 import com.apexballistics.defense.EmpSensitive;
 import com.apexballistics.defense.FactionRelations;
 import com.apexballistics.registry.ModBlockEntities;
+import com.apexballistics.registry.ModSounds;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -20,6 +21,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 
@@ -56,6 +58,8 @@ public class RadarBlockEntity extends BlockEntity implements EmpSensitive {
         if (pulse % 80 != 0) {
             return;
         }
+        level.playSound(null, worldPosition, ModSounds.RADAR_SERVO.get(),
+                SoundSource.BLOCKS, 0.65f, 1.0f);
         int contacts = countContacts(64.0);
         if (contacts > 0) {
             List<Player> players = level.getEntitiesOfClass(Player.class, new AABB(worldPosition).inflate(16));

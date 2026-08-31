@@ -2,9 +2,9 @@ package com.apexballistics.item;
 
 import com.apexballistics.entity.MissileEntity;
 import com.apexballistics.registry.ModEntities;
+import com.apexballistics.registry.ModSounds;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -56,7 +56,11 @@ public class MissileItem extends Item {
             missile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0f, kind.launchSpeed(), 0.4f);
             missile.acquireAirTarget(player);
             level.addFreshEntity(missile);
-            level.playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.FIREWORK_ROCKET_LAUNCH, SoundSource.PLAYERS, 1.2f, 0.7f);
+            level.playSound(null, player.getX(), player.getY(), player.getZ(),
+                    kind.profile() == MissileKind.FlightProfile.CRUISE
+                            ? ModSounds.CRUISE_LAUNCH.get()
+                            : ModSounds.INTERCEPTOR_LAUNCH.get(),
+                    SoundSource.PLAYERS, 2.2f, 1.0f);
             if (!player.getAbilities().instabuild) {
                 stack.shrink(1);
             }

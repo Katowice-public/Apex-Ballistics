@@ -1,0 +1,65 @@
+{
+  "ballistic_launch": {
+    "subtitle": "subtitles.apexballistics.ballistic_launch",
+    "sounds": [
+      {
+        "name": "apexballistics:ballistic_launch",
+        "stream": true
+      }
+    ]
+  },
+  "cruise_launch": {
+    "subtitle": "subtitles.apexballistics.cruise_launch",
+    "sounds": [
+      {
+        "name": "apexballistics:cruise_launch",
+        "stream": true
+      }
+    ]
+  },
+  "interceptor_launch": {
+    "subtitle": "subtitles.apexballistics.interceptor_launch",
+    "sounds": [
+      {
+        "name": "apexballistics:interceptor_launch",
+        "stream": false
+      }
+    ]
+  },
+  "missile_flight": {
+    "subtitle": "subtitles.apexballistics.missile_flight",
+    "sounds": [
+      {
+        "name": "apexballistics:missile_flight",
+        "stream": true
+      }
+    ]
+  },
+  "heavy_explosion": {
+    "subtitle": "subtitles.apexballistics.heavy_explosion",
+    "sounds": [
+      {
+        "name": "apexballistics:heavy_explosion",
+        "stream": true
+      }
+    ]
+  },
+  "light_explosion": {
+    "subtitle": "subtitles.apexballistics.light_explosion",
+    "sounds": [
+      {
+        "name": "apexballistics:light_explosion",
+        "stream": false
+      }
+    ]
+  },
+  "radar_servo": {
+    "subtitle": "subtitles.apexballistics.radar_servo",
+    "sounds": [
+      {
+        "name": "apexballistics:radar_servo",
+        "stream": false
+      }
+    ]
+  }
+}

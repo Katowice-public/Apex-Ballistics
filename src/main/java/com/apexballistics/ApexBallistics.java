@@ -8,6 +8,8 @@ import com.apexballistics.registry.ModBlocks;
 import com.apexballistics.registry.ModCreativeTabs;
 import com.apexballistics.registry.ModEntities;
 import com.apexballistics.registry.ModItems;
+import com.apexballistics.registry.ModMenus;
+import com.apexballistics.registry.ModSounds;
 import com.mojang.logging.LogUtils;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.common.MinecraftForge;
@@ -35,6 +37,8 @@ public class ApexBallistics {
         ModBlockEntities.BLOCK_ENTITIES.register(modBus);
         ModEntities.ENTITY_TYPES.register(modBus);
         ModCreativeTabs.CREATIVE_MODE_TABS.register(modBus);
+        ModMenus.MENUS.register(modBus);
+        ModSounds.SOUNDS.register(modBus);
 
         modBus.addListener(this::commonSetup);
         context.registerConfig(ModConfig.Type.COMMON, ApexConfig.SPEC);
