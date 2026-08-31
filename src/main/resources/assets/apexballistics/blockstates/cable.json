@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=north": {
+      "model": "apexballistics:block/cable"
+    },
+    "facing=south": {
+      "model": "apexballistics:block/cable",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "apexballistics:block/cable",
+      "y": 270
+    },
+    "facing=east": {
+      "model": "apexballistics:block/cable",
+      "y": 90
+    }
+  }
+}

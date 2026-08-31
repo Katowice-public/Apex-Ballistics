@@ -78,6 +78,11 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.PROPELLANT_REFINERY.get());
                         output.accept(ModItems.MAINTENANCE_STATION.get());
                         output.accept(ModItems.CAPACITOR_CHARGER.get());
+                        output.accept(ModItems.AIR_RAID_SIREN.get());
+                        output.accept(ModItems.INDUSTRIAL_SIREN.get());
+                        output.accept(ModItems.NUCLEAR_WARNING_SIREN.get());
+                        output.accept(ModItems.CABLE.get());
+                        output.accept(ModItems.MISSILE_SHOWCASE.get());
                         output.accept(ModItems.TARGETING_TABLET.get());
                         output.accept(ModItems.MANPADS.get());
 
@@ -105,7 +110,34 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.BUNKER_GLASS.get());
                         output.accept(ModItems.BLAST_DOOR.get());
                         output.accept(ModItems.SECURITY_DOOR.get());
+                        output.accept(ModItems.PERSONNEL_DOOR.get());
+                        output.accept(ModItems.AIRLOCK_DOOR.get());
                         output.accept(ModItems.SILO_HATCH.get());
+                        output.accept(ModItems.SUBMARINE_HATCH.get());
+                        output.accept(ModItems.MAINTENANCE_HATCH.get());
+                        output.accept(ModItems.BUNKER_DOOR.get());
+                        output.accept(ModItems.VAULT_DOOR.get());
+                        output.accept(ModItems.VEHICLE_DOOR.get());
+                        output.accept(ModItems.SILO_BLAST_LEAF.get());
+                        output.accept(ModItems.HANGAR_SHUTTER.get());
+                    })
+                    .build());
+
+    public static final RegistryObject<CreativeModeTab> BUILD_TAB = CREATIVE_MODE_TABS.register("apex_build",
+            () -> CreativeModeTab.builder()
+                    .title(Component.translatable("itemGroup.apexballistics.build"))
+                    .icon(() -> new ItemStack(ModItems.REINFORCED_CONCRETE.get()))
+                    .displayItems((parameters, output) -> {
+                        output.accept(ModItems.REINFORCED_CONCRETE.get());
+                        output.accept(ModItems.WHITE_REINFORCED_CONCRETE.get());
+                        output.accept(ModItems.BLACK_REINFORCED_CONCRETE.get());
+                        output.accept(ModItems.OLIVE_REINFORCED_CONCRETE.get());
+                        output.accept(ModItems.HAZARD_CONCRETE.get());
+                        output.accept(ModItems.BLAST_STEEL.get());
+                        output.accept(ModItems.BUNKER_GLASS.get());
+                        for (var entry : ModBlocks.BUILD.entrySet()) {
+                            output.accept(entry.getValue().get());
+                        }
                     })
                     .build());
 

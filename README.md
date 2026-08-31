@@ -100,8 +100,20 @@ the landscape ahead of cruise missiles.
   deployable launchers, and command consoles form a layered defense network.
 - Missile racks, loading cranes, propellant refineries, maintenance stations,
   capacitor chargers, and submarine control blocks provide logistics.
-- Reinforced concrete variants, blast steel, bunker glass, animated blast and
-  security doors, and silo hatches support hardened base construction.
+- Reinforced concrete variants, blast steel, bunker glass, 100+ 16×16 build
+  blocks (including colored glass and reinforced glass), 12 facility doors and
+  hatches with real collision, three sirens, cable links, and missile showcases
+  support hardened base construction.
+
+### Sirens, cable, and MIRV
+
+Use a **Cable** on a radar, then on a siren, to link them. Enable **Auto Alert**
+in the siren GUI so it wails when the radar sees a hostile incoming missile.
+Power, auto-alert, and speaker output are separate toggles.
+
+**MIRV** warheads split into six re-entry vehicles on descent. Load a missile
+into a **Missile Showcase** to display the full 3D round in the world and its
+spec sheet in the GUI. Loaded launchers render their mounted missiles.
 
 ## Optional factions and IFF
 

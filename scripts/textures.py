@@ -48,10 +48,11 @@ FONT = {
 }
 
 
-def write_png(path: Path, width: int, height: int, rgba: bytes) -> None:
+def write_png(path: Path, width: int, height: int, rgba: bytes, *, upscale: bool = True) -> None:
     # 512-wide sheets keep their height so armor can stay 2:1 (512x256).
-    # Anything smaller is treated as a draft and squared up to 512.
-    if width != 512:
+    # Anything smaller is treated as a draft and squared up to 512, unless
+    # the caller asks for a native 16x16 build-block texture.
+    if upscale and width != 512:
         source = rgba
         detailed = bytearray(SIZE * SIZE * 4)
         seed = zlib.crc32(path.as_posix().encode("utf-8")) & 0xFFFFFFFF
@@ -293,7 +294,21 @@ BLOCK_BASES = {
     "blast_door": (62, 66, 72),
     "security_door": (36, 70, 88),
     "silo_hatch": (74, 72, 68),
+    "personnel_door": (86, 88, 84),
+    "airlock_door": (48, 78, 96),
+    "submarine_hatch": (32, 58, 86),
+    "maintenance_hatch": (96, 92, 72),
+    "bunker_door": (70, 74, 68),
+    "vault_door": (92, 78, 42),
+    "vehicle_door": (64, 70, 62),
+    "silo_blast_leaf": (78, 76, 70),
+    "hangar_shutter": (58, 64, 70),
     "bunker_glass": (70, 140, 160),
+    "air_raid_siren": (168, 92, 36),
+    "industrial_siren": (92, 96, 72),
+    "nuclear_warning_siren": (196, 156, 42),
+    "cable": (48, 92, 58),
+    "missile_showcase": (42, 58, 78),
 }
 
 
@@ -444,3 +459,130 @@ def launcher_gui_texture(launcher: str) -> bytes:
             rect(buf, w, x + 6, z + (4 if hatch else 14), x + 26, z + (16 if hatch else 22), accent)
         stencil(buf, w, "MK41", 176, 148, 2, accent)
     return bytes(buf)
+
+
+def build16_texture(name: str) -> bytes:
+    """Native 16x16 cube textures for decorative build blocks."""
+    from catalog import DYE_RGB, is_glass
+
+    w = h = 16
+    buf = bytearray(w * h * 4)
+    seed = zlib.crc32(name.encode()) & 0xFFFFFFFF
+    color = None
+    family = name
+    for dye, rgb in DYE_RGB.items():
+        token = "_" + dye
+        if name.endswith(token):
+            color = rgb
+            family = name[: -len(token)]
+            break
+    if name == "reinforced_concrete":
+        family, color = "bunker_concrete", (92, 94, 96)
+    elif name == "white_reinforced_concrete":
+        family, color = "bunker_concrete", (198, 198, 194)
+    elif name == "black_reinforced_concrete":
+        family, color = "bunker_concrete", (32, 34, 36)
+    elif name == "olive_reinforced_concrete":
+        family, color = "bunker_concrete", (78, 86, 54)
+    elif name == "hazard_concrete":
+        family, color = "floor_marking", (196, 168, 42)
+    elif name == "blast_steel":
+        family, color = "steel_plate", (70, 74, 80)
+    elif name == "bunker_glass":
+        family, color = "blast_glass", (70, 140, 160)
+    if color is None:
+        if name.startswith("steel_plate"):
+            family, color = "steel_plate", (88, 92, 98)
+        elif name.startswith("steel_panel"):
+            family, color = "steel_panel", (64, 70, 78)
+        elif name.startswith("floor_marking"):
+            family, color = "floor_marking", (214, 176, 36)
+        else:
+            family, color = "bunker_concrete", (96, 98, 100)
+
+    br, bg, bb = color
+    glass = is_glass(name) or family in ("blast_glass", "reinforced_glass")
+    for y in range(h):
+        for x in range(w):
+            g = grain_at(x, y, seed)
+            if family == "bunker_bricks":
+                mortar = (x % 8 == 0) or (y % 4 == 0) or ((y // 4) % 2 == 1 and x % 8 == 4)
+                if mortar:
+                    px(buf, w, x, y, shade((48, 50, 52), g // 2))
+                    continue
+            if family == "bunker_tiles" and (x % 4 == 0 or y % 4 == 0):
+                px(buf, w, x, y, shade((36, 38, 40), 0))
+                continue
+            if family == "floor_marking" and ((x + y + (seed & 3)) // 3) & 1:
+                px(buf, w, x, y, shade((24, 24, 22), g))
+                continue
+            if family.startswith("steel") and (x in (1, 14) or y in (1, 14) or (x % 5 == 2 and y % 5 == 2)):
+                px(buf, w, x, y, shade((28, 30, 34), 0))
+                continue
+            alpha = 150 if glass else 255
+            if family == "reinforced_glass":
+                alpha = 185
+            px(buf, w, x, y, (max(0, min(255, br + g)), max(0, min(255, bg + g)),
+                              max(0, min(255, bb + g)), alpha))
+    if family == "bunker_concrete":
+        for i in range(0, 16, 8):
+            hline(buf, w, 0, 16, i, (40, 42, 44, 255))
+            vline(buf, w, i, 0, 16, (40, 42, 44, 255))
+    return bytes(buf)
+
+
+def panel_gui_texture(kind: str, heading: str, code: str, accent: tuple[int, int, int, int],
+                      motif: str) -> bytes:
+    w = h = SIZE
+    buf = bytearray(w * h * 4)
+    fill(buf, w, h, (6, 10, 14, 255))
+    rect(buf, w, 4, 4, 252, 216, (16, 26, 34, 255))
+    rect(buf, w, 8, 8, 248, 34, (24, 38, 48, 255))
+    hline(buf, w, 8, 248, 34, accent)
+    hline(buf, w, 8, 248, 168, accent)
+    rect(buf, w, 12, 38, 150, 164, (10, 18, 24, 255))
+    rect(buf, w, 154, 38, 244, 164, (10, 18, 24, 255))
+    for y in range(42, 160, 10):
+        hline(buf, w, 16, 146, y, (18, 32, 40, 255))
+    stencil(buf, w, heading, 16, 14, 2, accent)
+    stencil(buf, w, code, 160, 14, 2, (230, 230, 230, 255))
+    rect(buf, w, 14, 172, 80, 200, (22, 34, 40, 255))
+    rect(buf, w, 86, 172, 162, 200, (22, 34, 40, 255))
+    rect(buf, w, 168, 172, 242, 200, (22, 34, 40, 255))
+    if motif == "air_raid":
+        for r in range(52, 8, -4):
+            for a in range(0, 360, 3):
+                x = int(199 + math.cos(math.radians(a)) * r)
+                y = int(101 + math.sin(math.radians(a)) * r)
+                px(buf, w, x, y, accent if r % 10 == 0 else (40, 28, 16, 255))
+        stencil(buf, w, "WAIL", 176, 148, 2, accent)
+    elif motif == "industrial":
+        for i in range(6):
+            rect(buf, w, 164 + i * 12, 50, 172 + i * 12, 150, accent if i % 2 == 0 else (80, 84, 60, 255))
+        stencil(buf, w, "HORN", 176, 148, 2, accent)
+    elif motif == "nuclear":
+        for r in range(46, 10, -6):
+            for a in range(0, 360, 4):
+                x = int(199 + math.cos(math.radians(a)) * r)
+                y = int(96 + math.sin(math.radians(a)) * r)
+                px(buf, w, x, y, (220, 180, 40, 255) if r % 12 == 0 else (50, 42, 12, 255))
+        stencil(buf, w, "ALERT", 168, 148, 2, accent)
+    else:
+        rect(buf, w, 168, 48, 232, 150, (20, 32, 48, 255))
+        rect(buf, w, 180, 60, 220, 138, accent)
+        stencil(buf, w, "ROUND", 168, 148, 2, accent)
+    return bytes(buf)
+
+
+def siren_gui_texture(siren: str) -> bytes:
+    themes = {
+        "air_raid_siren": ((226, 92, 48, 255), "AIR RAID", "SIREN", "air_raid"),
+        "industrial_siren": ((196, 176, 64, 255), "INDUSTRIAL", "HORN", "industrial"),
+        "nuclear_warning_siren": ((232, 196, 48, 255), "CIVIL DEFENSE", "WARN", "nuclear"),
+    }
+    accent, heading, code, motif = themes[siren]
+    return panel_gui_texture(siren, heading, code, accent, motif)
+
+
+def showcase_gui_texture() -> bytes:
+    return panel_gui_texture("showcase", "MISSILE", "DISPLAY", (80, 170, 220, 255), "showcase")

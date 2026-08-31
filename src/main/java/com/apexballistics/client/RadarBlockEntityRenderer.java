@@ -26,10 +26,10 @@ public final class RadarBlockEntityRenderer implements BlockEntityRenderer<Radar
                 ? partialTick
                 : radar.getLevel().getGameTime() + partialTick;
         poseStack.pushPose();
-        poseStack.translate(0.5, 0.92, 0.5);
+        poseStack.translate(0.5, 1.62, 0.5);
         poseStack.mulPose(Axis.YP.rotationDegrees(time * 2.4f));
         poseStack.mulPose(Axis.XP.rotationDegrees(-22.0f));
-        poseStack.scale(1.15f, 1.15f, 1.15f);
+        poseStack.scale(1.35f, 1.35f, 1.35f);
         itemRenderer.renderStatic(new ItemStack(ModItems.RADAR_DISH_COMPONENT.get()),
                 ItemDisplayContext.FIXED, packedLight, OverlayTexture.NO_OVERLAY,
                 poseStack, buffers, radar.getLevel(), (int) radar.getBlockPos().asLong());

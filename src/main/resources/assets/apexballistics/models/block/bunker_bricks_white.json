@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "apexballistics:block/bunker_bricks_white"
+  }
+}

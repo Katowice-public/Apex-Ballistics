@@ -25,6 +25,45 @@ public enum LauncherType {
     }
 
     public int capacity() {
-        return this == VLS ? 4 : 1;
+        return switch (this) {
+            case VLS, SAM_BATTERY -> 4;
+            case MOBILE -> 2;
+            default -> 1;
+        };
+    }
+
+    public net.minecraft.world.phys.Vec3[] mountPoints() {
+        return switch (this) {
+            case SILO -> new net.minecraft.world.phys.Vec3[]{new net.minecraft.world.phys.Vec3(0.50, 1.15, 0.50)};
+            case TUBE -> new net.minecraft.world.phys.Vec3[]{new net.minecraft.world.phys.Vec3(0.50, 0.55, 0.50)};
+            case PAD -> new net.minecraft.world.phys.Vec3[]{new net.minecraft.world.phys.Vec3(0.50, 0.62, 0.48)};
+            case SAM_BATTERY -> new net.minecraft.world.phys.Vec3[]{
+                    new net.minecraft.world.phys.Vec3(0.32, 0.70, 0.50),
+                    new net.minecraft.world.phys.Vec3(0.46, 0.70, 0.50),
+                    new net.minecraft.world.phys.Vec3(0.60, 0.70, 0.50),
+                    new net.minecraft.world.phys.Vec3(0.74, 0.70, 0.50)
+            };
+            case MOBILE -> new net.minecraft.world.phys.Vec3[]{
+                    new net.minecraft.world.phys.Vec3(0.22, 0.88, 0.36),
+                    new net.minecraft.world.phys.Vec3(0.38, 0.88, 0.52)
+            };
+            case VLS -> new net.minecraft.world.phys.Vec3[]{
+                    new net.minecraft.world.phys.Vec3(0.26, 0.72, 0.26),
+                    new net.minecraft.world.phys.Vec3(0.74, 0.72, 0.26),
+                    new net.minecraft.world.phys.Vec3(0.26, 0.72, 0.74),
+                    new net.minecraft.world.phys.Vec3(0.74, 0.72, 0.74)
+            };
+        };
+    }
+
+    public float mountScale() {
+        return switch (this) {
+            case SILO -> 0.72f;
+            case TUBE -> 0.58f;
+            case PAD -> 0.52f;
+            case SAM_BATTERY -> 0.36f;
+            case MOBILE -> 0.48f;
+            case VLS -> 0.40f;
+        };
     }
 }

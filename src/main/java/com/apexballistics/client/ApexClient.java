@@ -18,6 +18,8 @@ public final class ApexClient {
 
     public static void init() {
         MenuScreens.register(ModMenus.LAUNCHER.get(), LauncherScreen::new);
+        MenuScreens.register(ModMenus.SIREN.get(), SirenScreen::new);
+        MenuScreens.register(ModMenus.SHOWCASE.get(), ShowcaseScreen::new);
         ApexBallistics.LOGGER.info("Apex Ballistics client systems online.");
     }
 
@@ -28,5 +30,8 @@ public final class ApexClient {
         event.registerEntityRenderer(ModEntities.FLARE.get(), NoopRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.RADAR.get(), RadarBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DEFENSE_SYSTEM.get(), DefenseSystemRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.LAUNCHER.get(), LauncherBlockEntityRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.SIREN.get(), SirenRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.SHOWCASE.get(), ShowcaseRenderer::new);
     }
 }

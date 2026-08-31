@@ -244,6 +244,12 @@ class ObjBuilder:
 
 
 def add_missile_mesh(mesh: ObjBuilder, kind: str) -> None:
+    """World/item missiles are more than 3 blocks long and thick enough to read as airframes."""
+    with mesh.at((0.0, 0.0, 0.0), scale=2.18):
+        _add_missile_airframe(mesh, kind)
+
+
+def _add_missile_airframe(mesh: ObjBuilder, kind: str) -> None:
     """Unique airframes: ICBM/SLBM/SRBM ballistic; ALCM/cruise air-breathers; SAM/AAM/interceptor."""
     if kind == "icbm":
         # Minuteman-class three-stage ICBM with raceway and RV, no large fins.
@@ -361,8 +367,6 @@ def _icbm_silo(mesh: ObjBuilder) -> None:
     mesh.box(0.08, 0.16, 0.70, 0.14, 0.72, 0.92, "dark")
     for y in range(4):
         mesh.box(0.46, 0.20 + y * 0.18, 0.14, 0.54, 0.24 + y * 0.18, 0.18, "yellow")
-    with mesh.at((0.5, 0.95, 0.5), scale=0.55):
-        add_missile_mesh(mesh, "icbm")
 
 
 def _slbm_tube(mesh: ObjBuilder) -> None:
@@ -378,8 +382,6 @@ def _slbm_tube(mesh: ObjBuilder) -> None:
     mesh.box(0.10, 0.08, 0.10, 0.22, 0.22, 0.90, "dark")
     mesh.box(0.78, 0.08, 0.10, 0.90, 0.22, 0.90, "dark")
     mesh.torus((0.5, 0.20, 0.5), (0, 1, 0), 0.36, 0.03, 20, 8, "yellow")
-    with mesh.at((0.5, 0.55, 0.5), scale=0.62):
-        add_missile_mesh(mesh, "slbm")
 
 
 def _cruise_pad(mesh: ObjBuilder) -> None:
@@ -399,8 +401,6 @@ def _cruise_pad(mesh: ObjBuilder) -> None:
     mesh.box(0.08, 0.38, 0.08, 0.20, 0.50, 0.20, "glass")
     for z in (0.30, 0.48, 0.66):
         mesh.cylinder((0.50, 0.34, z), (0.50, 0.42, z), 0.03, 10, "yellow", True)
-    with mesh.at((0.50, 0.62, 0.48), scale=0.55, yaw=0.55):
-        add_missile_mesh(mesh, "cruise_missile")
 
 
 def _sam_battery(mesh: ObjBuilder) -> None:
@@ -414,8 +414,6 @@ def _sam_battery(mesh: ObjBuilder) -> None:
         mesh.box(x - 0.07, 0.44, 0.34, x + 0.07, 1.18, 0.66, "olive")
         mesh.box(x - 0.065, 1.14, 0.36, x + 0.065, 1.22, 0.64, "accent")
         mesh.box(x - 0.02, 0.50, 0.32, x + 0.02, 1.10, 0.34, "yellow")
-        mesh.cylinder((x, 0.50, 0.50), (x, 1.12, 0.50), 0.045, 16, "white", False)
-        mesh.cone((x, 1.12, 0.50), (x, 1.20, 0.50), 0.045, 14, "accent")
     mesh.box(0.24, 0.44, 0.28, 0.28, 1.10, 0.72, "dark")
     mesh.box(0.72, 0.44, 0.28, 0.76, 1.10, 0.72, "dark")
     mesh.cylinder((0.50, 0.38, 0.72), (0.50, 0.86, 0.50), 0.03, 10, "dark", True)
@@ -443,10 +441,6 @@ def _mobile_launcher(mesh: ObjBuilder) -> None:
     mesh.box(0.16, 0.38, 0.36, 0.70, 0.48, 0.64, "dark")
     mesh.cylinder((0.26, 0.46, 0.42), (0.18, 1.22, 0.30), 0.07, 18, "olive", False)
     mesh.cylinder((0.42, 0.46, 0.58), (0.34, 1.22, 0.46), 0.07, 18, "olive", False)
-    with mesh.at((0.22, 0.88, 0.36), scale=0.40, yaw=-0.4):
-        add_missile_mesh(mesh, "srbm")
-    with mesh.at((0.38, 0.88, 0.52), scale=0.40, yaw=-0.4):
-        add_missile_mesh(mesh, "srbm")
 
 
 def _vls(mesh: ObjBuilder) -> None:
@@ -456,12 +450,7 @@ def _vls(mesh: ObjBuilder) -> None:
     cells = ((0.26, 0.26), (0.74, 0.26), (0.26, 0.74), (0.74, 0.74))
     for i, (x, z) in enumerate(cells):
         mesh.box(x - 0.18, 0.56, z - 0.18, x + 0.18, 0.64, z + 0.18, "dark")
-        if i < 2:
-            mesh.box(x - 0.16, 0.64, z - 0.16, x + 0.16, 0.70, z + 0.16, "yellow")
-        else:
-            mesh.box(x - 0.16, 0.64, z - 0.02, x + 0.22, 0.72, z + 0.16, "body")
-            mesh.cylinder((x, 0.58, z), (x, 0.92, z), 0.07, 16, "white", False)
-            mesh.cone((x, 0.92, z), (x, 1.08, z), 0.07, 16, "accent")
+        mesh.box(x - 0.16, 0.64, z - 0.16, x + 0.16, 0.70, z + 0.16, "yellow")
     mesh.box(0.44, 0.58, 0.44, 0.56, 0.92, 0.56, "dark")
     mesh.box(0.42, 0.90, 0.42, 0.58, 0.98, 0.58, "accent")
     mesh.bolt_ring((0.5, 0.58, 0.5), (0, 1, 0), 0.46, 16, 0.012, "yellow")
@@ -469,48 +458,54 @@ def _vls(mesh: ObjBuilder) -> None:
 
 
 def add_radar_base_mesh(mesh: ObjBuilder) -> None:
-    mesh.box(0.10, 0.00, 0.10, 0.90, 0.14, 0.90, "dark")
-    mesh.box(0.18, 0.14, 0.18, 0.46, 0.42, 0.46, "olive")
-    mesh.box(0.22, 0.28, 0.22, 0.42, 0.40, 0.42, "glass")
-    mesh.cylinder((0.5, 0.12, 0.5), (0.5, 0.78, 0.5), 0.12, 24, "body", True)
-    mesh.cylinder((0.5, 0.76, 0.5), (0.5, 0.88, 0.5), 0.22, 28, "dark", True)
-    mesh.box(0.42, 0.86, 0.42, 0.58, 0.96, 0.58, "yellow")
-    mesh.cylinder((0.78, 0.14, 0.78), (0.78, 0.50, 0.78), 0.04, 10, "dark", True)
-    mesh.box(0.62, 0.14, 0.62, 0.90, 0.28, 0.90, "body")
+    mesh.box(-0.18, 0.00, -0.18, 1.18, 0.18, 1.18, "dark")
+    mesh.box(0.04, 0.18, 0.04, 0.96, 0.28, 0.96, "olive")
+    mesh.box(0.10, 0.20, 0.10, 0.42, 0.58, 0.42, "olive")
+    mesh.box(0.14, 0.36, 0.14, 0.38, 0.54, 0.38, "glass")
+    mesh.cylinder((0.5, 0.16, 0.5), (0.5, 1.42, 0.5), 0.16, 28, "body", True)
+    mesh.cylinder((0.5, 1.38, 0.5), (0.5, 1.58, 0.5), 0.30, 32, "dark", True)
+    mesh.box(0.38, 1.54, 0.38, 0.62, 1.70, 0.62, "yellow")
+    mesh.cylinder((0.96, 0.18, 0.96), (0.96, 0.82, 0.96), 0.05, 12, "dark", True)
+    mesh.box(0.70, 0.18, 0.70, 1.12, 0.40, 1.12, "body")
+    mesh.bolt_ring((0.5, 0.18, 0.5), (0, 1, 0), 0.52, 12, 0.016, "yellow")
 
 
 def add_radar_dish_mesh(mesh: ObjBuilder) -> None:
-    mesh.dish((0.0, 0.0, 0.0), 0.48, 0.36, rings=12, segments=40, material="white")
-    mesh.cylinder((0, 0, 0.08), (0, 0, 0.62), 0.022, 14, "accent", True)
-    mesh.sphere((0, 0, 0.64), 0.045, 12, 8, "accent")
+    mesh.dish((0.0, 0.0, 0.0), 0.92, 0.62, rings=14, segments=44, material="white")
+    mesh.cylinder((0, 0, 0.12), (0, 0, 1.05), 0.032, 16, "accent", True)
+    mesh.sphere((0, 0, 1.10), 0.07, 14, 10, "accent")
     for a in (0.0, TAU / 3, 2 * TAU / 3):
-        x, y = math.cos(a) * 0.38, math.sin(a) * 0.38
-        mesh.cylinder((x, y, 0.22), (0, 0, 0.58), 0.012, 8, "dark", True)
-    mesh.box(-0.08, -0.08, -0.06, 0.08, 0.08, 0.10, "dark")
-    mesh.cylinder((0, 0, -0.18), (0, 0, 0.02), 0.05, 14, "body", True)
-    mesh.box(-0.16, -0.04, -0.22, 0.16, 0.04, -0.10, "dark")
+        x, y = math.cos(a) * 0.72, math.sin(a) * 0.72
+        mesh.cylinder((x, y, 0.32), (0, 0, 0.98), 0.018, 8, "dark", True)
+    mesh.box(-0.14, -0.14, -0.10, 0.14, 0.14, 0.16, "dark")
+    mesh.cylinder((0, 0, -0.28), (0, 0, 0.04), 0.08, 16, "body", True)
+    mesh.box(-0.26, -0.06, -0.34, 0.26, 0.06, -0.14, "dark")
+    mesh.bolt_ring((0, 0, 0.02), (0, 0, 1), 0.18, 8, 0.014, "yellow")
 
 
 def add_ciws_base(mesh: ObjBuilder) -> None:
-    mesh.box(0.08, 0.00, 0.08, 0.92, 0.10, 0.92, "dark")
-    mesh.box(0.16, 0.10, 0.16, 0.84, 0.18, 0.84, "white")
-    mesh.cylinder((0.5, 0.16, 0.5), (0.5, 0.42, 0.5), 0.20, 28, "white", True)
-    mesh.bolt_ring((0.5, 0.18, 0.5), (0, 1, 0), 0.36, 10, 0.012, "yellow")
-    mesh.box(0.18, 0.10, 0.18, 0.34, 0.28, 0.34, "dark")
-    mesh.box(0.66, 0.10, 0.66, 0.82, 0.24, 0.82, "accent")
+    mesh.box(-0.12, 0.00, -0.12, 1.12, 0.14, 1.12, "dark")
+    mesh.box(0.02, 0.14, 0.02, 0.98, 0.28, 0.98, "white")
+    mesh.cylinder((0.5, 0.22, 0.5), (0.5, 0.62, 0.5), 0.32, 32, "white", True)
+    mesh.bolt_ring((0.5, 0.26, 0.5), (0, 1, 0), 0.48, 12, 0.016, "yellow")
+    mesh.box(0.06, 0.14, 0.06, 0.32, 0.44, 0.32, "dark")
+    mesh.box(0.74, 0.14, 0.74, 1.04, 0.38, 1.04, "accent")
+    mesh.box(0.78, 0.38, 0.78, 0.98, 0.70, 0.98, "dark")
 
 
 def add_ciws_turret(mesh: ObjBuilder) -> None:
     """Turret head centered at origin, barrels along +Z, for BER yaw/spin."""
-    mesh.sphere((0.0, 0.10, 0.0), 0.16, 16, 12, "white")
-    mesh.box(-0.14, -0.04, -0.16, 0.14, 0.22, 0.18, "white")
-    mesh.box(-0.22, 0.00, -0.08, -0.14, 0.16, 0.10, "dark")
-    mesh.cylinder((0.0, 0.06, 0.12), (0.0, 0.06, 0.28), 0.055, 14, "dark", True)
+    mesh.sphere((0.0, 0.18, 0.0), 0.30, 18, 14, "white")
+    mesh.box(-0.28, -0.06, -0.30, 0.28, 0.40, 0.34, "white")
+    mesh.box(-0.42, 0.02, -0.16, -0.26, 0.30, 0.18, "dark")
+    mesh.box(0.26, 0.02, -0.16, 0.42, 0.30, 0.18, "dark")
+    mesh.cylinder((0.0, 0.12, 0.22), (0.0, 0.12, 0.52), 0.10, 16, "dark", True)
     for i in range(6):
         a = TAU * i / 6
-        x, y = math.cos(a) * 0.042, 0.06 + math.sin(a) * 0.042
-        mesh.cylinder((x, y, 0.20), (x, y, 0.62), 0.011, 8, "dark", True)
-    mesh.box(-0.04, 0.18, -0.06, 0.04, 0.28, 0.08, "accent")
+        x, y = math.cos(a) * 0.078, 0.12 + math.sin(a) * 0.078
+        mesh.cylinder((x, y, 0.36), (x, y, 1.18), 0.018, 8, "dark", True)
+    mesh.box(-0.08, 0.34, -0.10, 0.08, 0.54, 0.16, "accent")
+    mesh.box(-0.18, 0.36, -0.04, 0.18, 0.42, 0.22, "yellow")
 
 
 def add_laser_base(mesh: ObjBuilder) -> None:
@@ -688,13 +683,13 @@ def add_handheld_mesh(mesh: ObjBuilder, name: str) -> None:
 def add_radar_item_mesh(mesh: ObjBuilder) -> None:
     """Inventory radar includes a parked dish so the icon is not a bare pedestal."""
     add_radar_base_mesh(mesh)
-    with mesh.at((0.5, 0.96, 0.5), scale=0.82, pitch=-0.40):
+    with mesh.at((0.5, 1.62, 0.5), scale=0.62, pitch=-0.40):
         add_radar_dish_mesh(mesh)
 
 
 def add_ciws_item_mesh(mesh: ObjBuilder) -> None:
     add_ciws_base(mesh)
-    with mesh.at((0.5, 0.42, 0.5)):
+    with mesh.at((0.5, 0.62, 0.5)):
         add_ciws_turret(mesh)
 
 
@@ -954,11 +949,205 @@ def add_component_mesh(mesh: ObjBuilder, name: str) -> None:
         mesh.box(-0.10, 0.00, -0.10, 0.10, 0.16, 0.10, "body")
 
 
+def add_air_raid_siren_base(mesh: ObjBuilder) -> None:
+    """Civil dual-trumpet air-raid siren: squat cabinet and twin masts."""
+    mesh.box(0.12, 0.00, 0.12, 0.88, 0.18, 0.88, "dark")
+    mesh.box(0.20, 0.18, 0.20, 0.80, 0.62, 0.80, "accent")
+    mesh.box(0.24, 0.28, 0.24, 0.76, 0.52, 0.76, "dark")
+    mesh.cylinder((0.32, 0.60, 0.50), (0.32, 1.35, 0.50), 0.05, 14, "yellow", True)
+    mesh.cylinder((0.68, 0.60, 0.50), (0.68, 1.35, 0.50), 0.05, 14, "yellow", True)
+    mesh.box(0.28, 0.62, 0.46, 0.72, 0.70, 0.54, "body")
+    for x in (0.28, 0.72):
+        mesh.box(x - 0.06, 0.18, 0.18, x + 0.06, 0.34, 0.30, "yellow")
+    mesh.bolt_ring((0.5, 0.18, 0.5), (0, 1, 0), 0.34, 8, 0.012, "yellow")
+
+
+def add_air_raid_horns(mesh: ObjBuilder) -> None:
+    """Pair of rotating trumpets centered at origin, bells along +Z."""
+    for x in (-0.22, 0.22):
+        mesh.cylinder((x, 0.0, -0.10), (x, 0.0, 0.18), 0.05, 14, "dark", True)
+        mesh.cylinder((x, 0.0, 0.16), (x, 0.0, 0.62), 0.09, 16, "accent", True, 0.16)
+        mesh.cylinder((x, 0.0, 0.60), (x, 0.0, 0.72), 0.17, 16, "yellow", True)
+        mesh.box(x - 0.03, -0.12, -0.04, x + 0.03, 0.12, 0.08, "dark")
+    mesh.box(-0.28, -0.04, -0.16, 0.28, 0.04, -0.04, "body")
+
+
+def add_industrial_siren_mesh(mesh: ObjBuilder) -> None:
+    """Stacked factory horns on a motor housing — visually distinct from the air-raid pair."""
+    mesh.box(0.08, 0.00, 0.16, 0.92, 0.22, 0.84, "olive")
+    mesh.box(0.18, 0.22, 0.24, 0.82, 0.70, 0.76, "dark")
+    mesh.cylinder((0.5, 0.68, 0.5), (0.5, 0.92, 0.5), 0.22, 20, "yellow", True)
+    mesh.cylinder((0.5, 0.90, 0.5), (0.5, 1.18, 0.5), 0.16, 18, "accent", True, 0.28)
+    mesh.cylinder((0.5, 1.16, 0.5), (0.5, 1.38, 0.5), 0.10, 16, "body", True, 0.20)
+    mesh.box(0.12, 0.24, 0.28, 0.22, 0.62, 0.72, "yellow")
+    mesh.box(0.78, 0.24, 0.28, 0.88, 0.62, 0.72, "yellow")
+    mesh.torus((0.5, 0.46, 0.5), (0, 1, 0), 0.28, 0.04, 16, 10, "dark")
+    mesh.box(0.36, 0.22, 0.10, 0.64, 0.40, 0.24, "glass")
+
+
+def add_nuclear_siren_base(mesh: ObjBuilder) -> None:
+    """Tall civil-defense pole; the large horn is a separate rotating component."""
+    mesh.box(0.22, 0.00, 0.22, 0.78, 0.16, 0.78, "concrete")
+    mesh.cylinder((0.5, 0.14, 0.5), (0.5, 2.35, 0.5), 0.07, 16, "yellow", True)
+    mesh.cylinder((0.5, 0.14, 0.5), (0.5, 0.28, 0.5), 0.14, 16, "dark", True)
+    mesh.box(0.42, 1.10, 0.42, 0.58, 1.22, 0.58, "accent")
+    mesh.box(0.18, 0.16, 0.42, 0.32, 0.70, 0.58, "dark")
+    mesh.bolt_ring((0.5, 0.16, 0.5), (0, 1, 0), 0.24, 8, 0.012, "yellow")
+
+
+def add_nuclear_horn(mesh: ObjBuilder) -> None:
+    """Single oversized civil-defense projector, bell along +Z."""
+    mesh.box(-0.10, -0.10, -0.18, 0.10, 0.10, 0.08, "dark")
+    mesh.cylinder((0.0, 0.0, 0.04), (0.0, 0.0, 0.42), 0.12, 18, "yellow", True)
+    mesh.cylinder((0.0, 0.0, 0.40), (0.0, 0.0, 0.88), 0.18, 20, "accent", True, 0.36)
+    mesh.cylinder((0.0, 0.0, 0.86), (0.0, 0.0, 0.96), 0.38, 20, "body", True)
+    mesh.box(-0.04, 0.10, -0.06, 0.04, 0.22, 0.20, "dark")
+
+
+def add_cable_block_mesh(mesh: ObjBuilder) -> None:
+    """Floor conduit run with armored jacket, glands, and a visible conductor."""
+    mesh.box(0.18, 0.00, 0.00, 0.82, 0.16, 1.00, "dark")
+    mesh.cylinder((0.50, 0.20, 0.00), (0.50, 0.20, 1.00), 0.11, 18, "olive", False)
+    mesh.cylinder((0.50, 0.20, 0.00), (0.50, 0.20, 1.00), 0.045, 12, "yellow", False)
+    mesh.cylinder((0.50, 0.20, 0.04), (0.50, 0.20, 0.18), 0.15, 16, "dark", True)
+    mesh.cylinder((0.50, 0.20, 0.82), (0.50, 0.20, 0.96), 0.15, 16, "dark", True)
+    mesh.box(0.42, 0.28, 0.40, 0.58, 0.40, 0.60, "accent")
+    for z in (0.30, 0.50, 0.70):
+        mesh.torus((0.50, 0.20, z), (0, 0, 1), 0.13, 0.02, 12, 8, "yellow")
+
+
+def add_cable_item_mesh(mesh: ObjBuilder) -> None:
+    """Coiled cable spool for the inventory/item, distinct from the floor conduit."""
+    mesh.cylinder((0.0, 0.02, 0.0), (0.0, 0.08, 0.0), 0.16, 20, "dark", True)
+    mesh.cylinder((0.0, 0.22, 0.0), (0.0, 0.28, 0.0), 0.16, 20, "dark", True)
+    mesh.cylinder((0.0, 0.04, 0.0), (0.0, 0.26, 0.0), 0.04, 12, "body", True)
+    mesh.torus((0.0, 0.15, 0.0), (0, 1, 0), 0.12, 0.035, 18, 10, "olive")
+    mesh.torus((0.0, 0.15, 0.0), (0, 1, 0), 0.08, 0.028, 16, 10, "yellow")
+    mesh.cylinder((0.10, 0.15, 0.00), (0.22, 0.04, 0.10), 0.018, 8, "accent", True)
+
+
+def add_showcase_mesh(mesh: ObjBuilder) -> None:
+    """Museum plinth; the loaded missile is drawn by the block-entity renderer."""
+    mesh.box(0.08, 0.00, 0.08, 0.92, 0.12, 0.92, "dark")
+    mesh.box(0.16, 0.12, 0.16, 0.84, 0.58, 0.84, "navy")
+    mesh.box(0.12, 0.58, 0.12, 0.88, 0.68, 0.88, "body")
+    mesh.cylinder((0.5, 0.66, 0.5), (0.5, 0.78, 0.5), 0.16, 20, "yellow", True)
+    mesh.box(0.22, 0.20, 0.22, 0.78, 0.52, 0.28, "glass")
+    mesh.box(0.22, 0.20, 0.72, 0.78, 0.52, 0.78, "glass")
+    mesh.bolt_ring((0.5, 0.12, 0.5), (0, 1, 0), 0.38, 8, 0.012, "yellow")
+
+
+def add_facility_door_mesh(mesh: ObjBuilder, kind: str, opened: bool) -> None:
+    """North-facing facility door/hatch. Open poses park the leaf out of the opening."""
+    from catalog import FACILITY_DOORS
+    spec = next(entry for entry in FACILITY_DOORS if entry[0] == kind)
+    width, height, hatch, thickness, depth = spec[1], spec[2], spec[3], spec[4], spec[5]
+    if hatch:
+        if opened:
+            mesh.box(0.04, 0.00, max(0.55, depth - 0.22), width - 0.04, min(1.35, 0.2 + width),
+                     max(0.55, depth - 0.22) + thickness, "dark")
+            mesh.cylinder((width * 0.5, 0.08, depth - 0.08),
+                          (width * 0.5, 1.05, depth - 0.08), min(0.36, width * 0.35), 24, "body", True)
+            mesh.box(width * 0.45, 0.00, depth - 0.20, width * 0.55, 0.10, depth, "yellow")
+        else:
+            mesh.box(0.00, 0.00, 0.00, width, thickness * 0.35, depth, "concrete")
+            if kind == "maintenance_hatch":
+                mesh.box(0.06, thickness * 0.30, 0.06, width - 0.06, thickness, depth - 0.06, "yellow")
+                for x in range(3):
+                    mesh.box(0.12 + x * 0.28, thickness * 0.4, 0.10, 0.18 + x * 0.28, thickness + 0.02, depth - 0.10, "dark")
+            elif kind == "submarine_hatch":
+                mesh.cylinder((width * 0.5, 0.02, depth * 0.5),
+                              (width * 0.5, thickness, depth * 0.5), min(0.46, width * 0.46), 28, "navy", True)
+                mesh.torus((width * 0.5, thickness + 0.02, depth * 0.5), (0, 1, 0), 0.16, 0.03, 14, 8, "yellow")
+            else:
+                mesh.cylinder((width * 0.5, 0.02, depth * 0.5),
+                              (width * 0.5, thickness, depth * 0.5), min(0.48, width * 0.46), 32, "dark", True)
+                mesh.box(width * 0.46, thickness, 0.12, width * 0.54, thickness + 0.04, depth - 0.12, "yellow")
+                mesh.bolt_ring((width * 0.5, thickness, depth * 0.5), (0, 1, 0),
+                               min(0.42, width * 0.4), 12, 0.014, "yellow")
+        return
+
+    body = {
+        "personnel_door": "body",
+        "blast_door": "dark",
+        "security_door": "navy",
+        "airlock_door": "body",
+        "bunker_door": "olive",
+        "vault_door": "yellow",
+        "vehicle_door": "olive",
+        "hangar_shutter": "body",
+    }.get(kind, "body")
+    if opened:
+        mesh.box(-thickness, 0.00, 0.02, 0.04, height, width, body)
+        mesh.box(-thickness + 0.03, 0.08, 0.08, -0.01, height - 0.08, width - 0.08, "dark")
+        if kind in ("blast_door", "vault_door", "airlock_door"):
+            mesh.torus((-thickness * 0.5, min(1.1, height * 0.55), width * 0.5),
+                       (1, 0, 0), 0.14, 0.03, 14, 8, "yellow")
+        return
+    mesh.box(0.00, 0.00, 0.00, width, height, thickness, body)
+    mesh.box(0.04, 0.06, 0.03, width - 0.04, height - 0.06, thickness - 0.03, "dark")
+    if kind == "personnel_door":
+        mesh.box(width - 0.18, 0.92, thickness - 0.02, width - 0.08, 1.08, thickness + 0.04, "yellow")
+        mesh.box(0.08, 0.08, 0.02, 0.16, height - 0.08, thickness - 0.02, "yellow")
+    elif kind == "blast_door":
+        mesh.torus((width * 0.5, 1.05, thickness * 0.5), (0, 0, 1), 0.16, 0.035, 16, 10, "yellow")
+        mesh.bolt_ring((width * 0.5, 0.4, thickness), (0, 0, 1), 0.32, 10, 0.016, "yellow")
+        mesh.box(0.06, 0.10, 0.00, width - 0.06, 0.22, thickness + 0.02, "accent")
+    elif kind == "security_door":
+        mesh.box(0.18, 1.05, 0.02, width - 0.18, 1.70, thickness - 0.01, "glass")
+        mesh.box(width - 0.20, 0.90, thickness - 0.02, width - 0.08, 1.02, thickness + 0.03, "yellow")
+    elif kind == "airlock_door":
+        mesh.cylinder((width * 0.5, height * 0.55, thickness * 0.5),
+                      (width * 0.5, height * 0.55, thickness + 0.02), 0.22, 20, "glass", True)
+        mesh.box(-0.04, 0.20, 0.04, 0.08, height - 0.20, thickness - 0.04, "yellow")
+        mesh.box(width - 0.08, 0.20, 0.04, width + 0.04, height - 0.20, thickness - 0.04, "yellow")
+    elif kind == "bunker_door":
+        for y in (0.2, 1.0, 1.7):
+            mesh.box(0.08, y, thickness - 0.02, width - 0.08, y + 0.08, thickness + 0.02, "yellow")
+        mesh.torus((0.45, 1.0, thickness), (0, 0, 1), 0.18, 0.04, 14, 8, "accent")
+    elif kind == "vault_door":
+        mesh.cylinder((width * 0.55, 1.4, thickness * 0.4),
+                      (width * 0.55, 1.4, thickness + 0.06), 0.42, 28, "body", True)
+        mesh.torus((width * 0.55, 1.4, thickness + 0.04), (0, 0, 1), 0.28, 0.05, 16, 10, "yellow")
+        mesh.box(0.10, 0.08, 0.00, width - 0.10, 0.22, thickness + 0.02, "accent")
+    elif kind == "vehicle_door":
+        for x in range(6):
+            mesh.box(0.08 + x * 0.48, 0.10, 0.02, 0.22 + x * 0.48, height - 0.10, thickness - 0.02, "dark")
+        mesh.box(0.10, height - 0.18, 0.00, width - 0.10, height - 0.06, thickness + 0.02, "yellow")
+    elif kind == "hangar_shutter":
+        slat = 0.16
+        y = 0.04
+        while y < height - 0.04:
+            mesh.box(0.04, y, 0.02, width - 0.04, min(height - 0.04, y + slat * 0.7), thickness - 0.02,
+                     "yellow" if int(y / slat) % 2 == 0 else "dark")
+            y += slat
+        mesh.box(0.00, height - 0.12, 0.00, width, height, thickness + 0.02, "accent")
+
+
+def add_facility_door_item_mesh(mesh: ObjBuilder, kind: str) -> None:
+    from catalog import FACILITY_DOORS
+    spec = next(entry for entry in FACILITY_DOORS if entry[0] == kind)
+    hatch = spec[3]
+    if hatch:
+        mesh.cylinder((0.5, 0.02, 0.5), (0.5, 0.18, 0.5), 0.42, 28, "dark", True)
+        mesh.box(0.08, 0.00, 0.08, 0.92, 0.04, 0.92, "concrete")
+        if kind == "submarine_hatch":
+            mesh.torus((0.5, 0.20, 0.5), (0, 1, 0), 0.16, 0.03, 14, 8, "yellow")
+        elif kind == "maintenance_hatch":
+            mesh.box(0.20, 0.16, 0.20, 0.80, 0.20, 0.80, "yellow")
+        else:
+            mesh.bolt_ring((0.5, 0.18, 0.5), (0, 1, 0), 0.34, 10, 0.012, "yellow")
+        return
+    add_facility_door_mesh(mesh, kind, False)
+
+
 OBJ_BLOCKS = {
     "icbm_silo", "slbm_tube", "cruise_pad", "sam_battery", "mobile_launcher", "vls",
     "radar", "ciws", "laser_defense", "passive_radar", "command_console",
     "submarine_control", "missile_rack", "loading_crane", "propellant_refinery",
     "maintenance_station", "capacitor_charger", "missile_assembly",
+    "air_raid_siren", "industrial_siren", "nuclear_warning_siren",
+    "cable", "missile_showcase",
 }
 
 HANDHELD_OBJ = {
@@ -984,4 +1173,5 @@ COMPONENT_OBJ = {
 
 ANIMATED_COMPONENTS = {
     "ciws_turret_component", "laser_head_component", "radar_dish_component",
+    "air_raid_horn_component", "nuclear_horn_component",
 }

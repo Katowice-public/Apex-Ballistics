@@ -1,8 +1,10 @@
 package com.apexballistics.blockentity;
 
+import com.apexballistics.block.CableLinkable;
 import com.apexballistics.entity.MissileEntity;
 import com.apexballistics.defense.EmpSensitive;
 import com.apexballistics.defense.FactionRelations;
+import com.apexballistics.item.MissileKind;
 import com.apexballistics.registry.ModBlockEntities;
 import com.apexballistics.registry.ModSounds;
 import net.minecraft.ChatFormatting;
@@ -32,11 +34,12 @@ import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 
-public class RadarBlockEntity extends BlockEntity implements EmpSensitive {
+public class RadarBlockEntity extends BlockEntity implements EmpSensitive, CableLinkable {
     private static final Map<Level, Map<Long, RadarBlockEntity>> NETWORK = new WeakHashMap<>();
     private int pulse;
     private int empTicks;
     private UUID owner;
+    private BlockPos linkedSiren;
 
     public RadarBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.RADAR.get(), pos, state);
@@ -55,6 +58,9 @@ public class RadarBlockEntity extends BlockEntity implements EmpSensitive {
             return;
         }
         pulse++;
+        if (pulse % 10 == 0) {
+            alertLinkedSiren();
+        }
         if (pulse % 80 != 0) {
             return;
         }
@@ -156,6 +162,65 @@ public class RadarBlockEntity extends BlockEntity implements EmpSensitive {
         }
     }
 
+    private void alertLinkedSiren() {
+        if (linkedSiren == null || level == null) {
+            return;
+        }
+        if (!(level.getBlockEntity(linkedSiren) instanceof SirenBlockEntity siren)) {
+            return;
+        }
+        AABB box = new AABB(worldPosition).inflate(96);
+        boolean inbound = !level.getEntities((Entity) null, box, this::isHostileMissile).isEmpty();
+        if (!inbound) {
+            return;
+        }
+        boolean already = siren.sounding();
+        siren.triggerAutoAlert();
+        if (already) {
+            return;
+        }
+        List<Player> players = level.getEntitiesOfClass(Player.class, new AABB(worldPosition).inflate(24));
+        for (Player player : players) {
+            player.displayClientMessage(Component.translatable("message.apexballistics.siren_alert")
+                    .withStyle(ChatFormatting.RED), true);
+        }
+    }
+
+    private boolean isHostileMissile(Entity entity) {
+        if (!(entity instanceof MissileEntity missile)
+                || missile.getKind().profile() == MissileKind.FlightProfile.HOMING_AIR) {
+            return false;
+        }
+        Entity missileOwner = missile.getOwner();
+        Entity radarOwner = owner == null || level == null ? null : level.getPlayerByUUID(owner);
+        if (radarOwner != null && missileOwner == radarOwner) {
+            return false;
+        }
+        if (radarOwner != null && missileOwner != null && FactionRelations.isFriendly(radarOwner, missileOwner)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public boolean acceptCableFrom(BlockEntity other) {
+        return other instanceof SirenBlockEntity;
+    }
+
+    @Override
+    public void setCablePeer(BlockPos peer) {
+        linkedSiren = peer;
+        setChanged();
+        if (level != null) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    @Override
+    public BlockPos getCablePeer() {
+        return linkedSiren;
+    }
+
     @Override
     public void disableFor(int ticks) {
         empTicks = Math.max(empTicks, ticks);
@@ -174,6 +239,11 @@ public class RadarBlockEntity extends BlockEntity implements EmpSensitive {
             tag.putUUID("Owner", owner);
         }
         tag.putInt("EmpTicks", empTicks);
+        if (linkedSiren != null) {
+            tag.putInt("Sx", linkedSiren.getX());
+            tag.putInt("Sy", linkedSiren.getY());
+            tag.putInt("Sz", linkedSiren.getZ());
+        }
     }
 
     @Override
@@ -181,5 +251,10 @@ public class RadarBlockEntity extends BlockEntity implements EmpSensitive {
         super.loadAdditional(tag, registries);
         owner = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
         empTicks = tag.getInt("EmpTicks");
+        if (tag.contains("Sx")) {
+            linkedSiren = new BlockPos(tag.getInt("Sx"), tag.getInt("Sy"), tag.getInt("Sz"));
+        } else {
+            linkedSiren = null;
+        }
     }
 }

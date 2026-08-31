@@ -1,0 +1,11 @@
+{
+  "loader": "forge:obj",
+  "model": "apexballistics:models/block/hangar_shutter_open.obj",
+  "flip_v": true,
+  "automatic_culling": false,
+  "shade_quads": true,
+  "textures": {
+    "texture0": "apexballistics:block/hangar_shutter",
+    "particle": "apexballistics:block/hangar_shutter"
+  }
+}

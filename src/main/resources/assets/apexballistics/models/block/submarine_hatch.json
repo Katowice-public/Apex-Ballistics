@@ -1,0 +1,11 @@
+{
+  "loader": "forge:obj",
+  "model": "apexballistics:models/block/submarine_hatch.obj",
+  "flip_v": true,
+  "automatic_culling": false,
+  "shade_quads": true,
+  "textures": {
+    "texture0": "apexballistics:block/submarine_hatch",
+    "particle": "apexballistics:block/submarine_hatch"
+  }
+}

@@ -44,11 +44,11 @@ public class MissileRenderer extends EntityRenderer<MissileEntity> {
             poseStack.mulPose(Axis.XP.rotation(Mth.cos(age * 0.17f) * 0.025f));
         }
         float scale = switch (entity.getKind()) {
-            case ICBM -> 1.30f;
-            case SLBM -> 1.20f;
-            case SRBM -> 1.05f;
-            case ALCM, CRUISE -> 0.90f;
-            case SAM, AAM, INTERCEPTOR -> 0.82f;
+            case ICBM -> 1.20f;
+            case SLBM -> 1.15f;
+            case SRBM -> 1.10f;
+            case ALCM, CRUISE -> 1.05f;
+            case SAM, AAM, INTERCEPTOR -> 1.00f;
         };
         int light = entity.tickCount < 14 ? LightTexture.FULL_BRIGHT : packedLight;
         poseStack.scale(scale, scale, scale);

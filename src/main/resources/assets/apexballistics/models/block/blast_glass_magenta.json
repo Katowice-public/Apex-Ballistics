@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "apexballistics:block/blast_glass_magenta"
+  },
+  "render_type": "minecraft:translucent"
+}

@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "S": {
+      "item": "apexballistics:blast_steel"
+    },
+    "C": {
+      "item": "apexballistics:circuit_board"
+    }
+  },
+  "pattern": [
+    "SS",
+    "CC",
+    "SS"
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:hangar_shutter"
+  }
+}

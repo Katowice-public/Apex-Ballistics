@@ -38,7 +38,6 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.TrapDoorBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -364,13 +363,13 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive, Me
         if (level == null) {
             return;
         }
-        for (BlockPos pos : BlockPos.betweenClosed(worldPosition.offset(-2, 0, -2),
-                worldPosition.offset(2, 4, 2))) {
+        for (BlockPos pos : BlockPos.betweenClosed(worldPosition.offset(-3, 0, -3),
+                worldPosition.offset(3, 5, 3))) {
             BlockState state = level.getBlockState(pos);
-            if (state.is(ModBlocks.SILO_HATCH.get())
-                    && state.hasProperty(TrapDoorBlock.OPEN)
-                    && state.getValue(TrapDoorBlock.OPEN) != open) {
-                level.setBlock(pos, state.setValue(TrapDoorBlock.OPEN, open), 3);
+            if (state.getBlock() instanceof com.apexballistics.block.FacilityDoorBlock door
+                    && door.kind().siloCover()
+                    && state.getValue(com.apexballistics.block.FacilityDoorBlock.OPEN) != open) {
+                com.apexballistics.block.FacilityDoorBlock.setOpen(level, pos.immutable(), open);
             }
         }
     }

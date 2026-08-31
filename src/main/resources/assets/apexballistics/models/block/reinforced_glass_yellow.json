@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "apexballistics:block/reinforced_glass_yellow"
+  },
+  "render_type": "minecraft:translucent"
+}

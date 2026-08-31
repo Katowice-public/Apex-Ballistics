@@ -33,9 +33,10 @@ public final class DefenseSystemRenderer implements BlockEntityRenderer<DefenseS
                 : system.getLevel().getGameTime() + partialTick;
         poseStack.pushPose();
         if (type == SystemType.CIWS) {
-            poseStack.translate(0.5, 0.42, 0.5);
+            poseStack.translate(0.5, 0.62, 0.5);
             poseStack.mulPose(Axis.YP.rotationDegrees(time * 4.6f));
             poseStack.mulPose(Axis.XP.rotationDegrees(-10.0f + Mth.sin(time * 0.08f) * 8.0f));
+            poseStack.scale(1.85f, 1.85f, 1.85f);
             itemRenderer.renderStatic(new ItemStack(ModItems.CIWS_TURRET_COMPONENT.get()),
                     ItemDisplayContext.FIXED, packedLight, OverlayTexture.NO_OVERLAY,
                     poseStack, buffers, system.getLevel(), (int) system.getBlockPos().asLong());

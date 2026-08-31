@@ -4,6 +4,8 @@ import com.apexballistics.ApexBallistics;
 import com.apexballistics.item.ApexArmorItem;
 import com.apexballistics.item.ApexTiers;
 import com.apexballistics.item.ArmorModuleItem;
+import com.apexballistics.item.CableItem;
+import com.apexballistics.item.FacilityDoorItem;
 import com.apexballistics.item.FlareItem;
 import com.apexballistics.item.GaussRifleItem;
 import com.apexballistics.item.JammerItem;
@@ -14,10 +16,10 @@ import com.apexballistics.item.MissileModuleItem;
 import com.apexballistics.item.PlasmaBladeItem;
 import com.apexballistics.item.RailgunItem;
 import com.apexballistics.item.TargetingTabletItem;
+import com.apexballistics.block.DoorKind;
 import net.minecraft.core.Holder;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.BlockItem;
-import net.minecraft.world.item.DoubleHighBlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Rarity;
 import net.minecraft.world.item.SwordItem;
@@ -51,6 +53,10 @@ public final class ModItems {
     public static final RegistryObject<Item> CIWS_TURRET_COMPONENT = ITEMS.register("ciws_turret_component",
             () -> new Item(new Item.Properties().stacksTo(1)));
     public static final RegistryObject<Item> LASER_HEAD_COMPONENT = ITEMS.register("laser_head_component",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> AIR_RAID_HORN_COMPONENT = ITEMS.register("air_raid_horn_component",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> NUCLEAR_HORN_COMPONENT = ITEMS.register("nuclear_horn_component",
             () -> new Item(new Item.Properties().stacksTo(1)));
 
     public static final RegistryObject<MissileItem> ICBM = missile("icbm", MissileKind.ICBM, Rarity.EPIC);
@@ -149,6 +155,12 @@ public final class ModItems {
     public static final RegistryObject<BlockItem> PROPELLANT_REFINERY = blockItem("propellant_refinery", ModBlocks.PROPELLANT_REFINERY, Rarity.RARE);
     public static final RegistryObject<BlockItem> MAINTENANCE_STATION = blockItem("maintenance_station", ModBlocks.MAINTENANCE_STATION, Rarity.RARE);
     public static final RegistryObject<BlockItem> CAPACITOR_CHARGER = blockItem("capacitor_charger", ModBlocks.CAPACITOR_CHARGER, Rarity.RARE);
+    public static final RegistryObject<BlockItem> AIR_RAID_SIREN = blockItem("air_raid_siren", ModBlocks.AIR_RAID_SIREN, Rarity.UNCOMMON);
+    public static final RegistryObject<BlockItem> INDUSTRIAL_SIREN = blockItem("industrial_siren", ModBlocks.INDUSTRIAL_SIREN, Rarity.UNCOMMON);
+    public static final RegistryObject<BlockItem> NUCLEAR_WARNING_SIREN = blockItem("nuclear_warning_siren", ModBlocks.NUCLEAR_WARNING_SIREN, Rarity.RARE);
+    public static final RegistryObject<CableItem> CABLE = ITEMS.register("cable",
+            () -> new CableItem(ModBlocks.CABLE.get(), new Item.Properties().rarity(Rarity.UNCOMMON)));
+    public static final RegistryObject<BlockItem> MISSILE_SHOWCASE = blockItem("missile_showcase", ModBlocks.MISSILE_SHOWCASE, Rarity.RARE);
 
     public static final RegistryObject<BlockItem> REINFORCED_CONCRETE = blockItem("reinforced_concrete", ModBlocks.REINFORCED_CONCRETE, Rarity.COMMON);
     public static final RegistryObject<BlockItem> WHITE_REINFORCED_CONCRETE = blockItem("white_reinforced_concrete", ModBlocks.WHITE_REINFORCED_CONCRETE, Rarity.COMMON);
@@ -157,13 +169,25 @@ public final class ModItems {
     public static final RegistryObject<BlockItem> HAZARD_CONCRETE = blockItem("hazard_concrete", ModBlocks.HAZARD_CONCRETE, Rarity.COMMON);
     public static final RegistryObject<BlockItem> BLAST_STEEL = blockItem("blast_steel", ModBlocks.BLAST_STEEL, Rarity.UNCOMMON);
     public static final RegistryObject<BlockItem> BUNKER_GLASS = blockItem("bunker_glass", ModBlocks.BUNKER_GLASS, Rarity.UNCOMMON);
-    public static final RegistryObject<BlockItem> BLAST_DOOR = ITEMS.register("blast_door",
-            () -> new DoubleHighBlockItem(ModBlocks.BLAST_DOOR.get(),
-                    new Item.Properties().rarity(Rarity.UNCOMMON).fireResistant()));
-    public static final RegistryObject<BlockItem> SECURITY_DOOR = ITEMS.register("security_door",
-            () -> new DoubleHighBlockItem(ModBlocks.SECURITY_DOOR.get(),
-                    new Item.Properties().rarity(Rarity.UNCOMMON).fireResistant()));
-    public static final RegistryObject<BlockItem> SILO_HATCH = blockItem("silo_hatch", ModBlocks.SILO_HATCH, Rarity.UNCOMMON);
+    public static final RegistryObject<FacilityDoorItem> PERSONNEL_DOOR = doorItem("personnel_door", ModBlocks.PERSONNEL_DOOR, DoorKind.PERSONNEL);
+    public static final RegistryObject<FacilityDoorItem> BLAST_DOOR = doorItem("blast_door", ModBlocks.BLAST_DOOR, DoorKind.BLAST);
+    public static final RegistryObject<FacilityDoorItem> SECURITY_DOOR = doorItem("security_door", ModBlocks.SECURITY_DOOR, DoorKind.SECURITY);
+    public static final RegistryObject<FacilityDoorItem> AIRLOCK_DOOR = doorItem("airlock_door", ModBlocks.AIRLOCK_DOOR, DoorKind.AIRLOCK);
+    public static final RegistryObject<FacilityDoorItem> SILO_HATCH = doorItem("silo_hatch", ModBlocks.SILO_HATCH, DoorKind.SILO_HATCH);
+    public static final RegistryObject<FacilityDoorItem> SUBMARINE_HATCH = doorItem("submarine_hatch", ModBlocks.SUBMARINE_HATCH, DoorKind.SUBMARINE_HATCH);
+    public static final RegistryObject<FacilityDoorItem> MAINTENANCE_HATCH = doorItem("maintenance_hatch", ModBlocks.MAINTENANCE_HATCH, DoorKind.MAINTENANCE_HATCH);
+    public static final RegistryObject<FacilityDoorItem> BUNKER_DOOR = doorItem("bunker_door", ModBlocks.BUNKER_DOOR, DoorKind.BUNKER);
+    public static final RegistryObject<FacilityDoorItem> VAULT_DOOR = doorItem("vault_door", ModBlocks.VAULT_DOOR, DoorKind.VAULT);
+    public static final RegistryObject<FacilityDoorItem> VEHICLE_DOOR = doorItem("vehicle_door", ModBlocks.VEHICLE_DOOR, DoorKind.VEHICLE);
+    public static final RegistryObject<FacilityDoorItem> SILO_BLAST_LEAF = doorItem("silo_blast_leaf", ModBlocks.SILO_BLAST_LEAF, DoorKind.SILO_BLAST_LEAF);
+    public static final RegistryObject<FacilityDoorItem> HANGAR_SHUTTER = doorItem("hangar_shutter", ModBlocks.HANGAR_SHUTTER, DoorKind.HANGAR_SHUTTER);
+
+    static {
+        for (var entry : ModBlocks.BUILD.entrySet()) {
+            ITEMS.register(entry.getKey(), () -> new BlockItem(entry.getValue().get(),
+                    new Item.Properties().fireResistant()));
+        }
+    }
 
     private static RegistryObject<MissileItem> missile(String name, MissileKind kind, Rarity rarity) {
         return ITEMS.register(name, () -> new MissileItem(kind, new Item.Properties().stacksTo(4).rarity(rarity).fireResistant()));
@@ -183,6 +207,13 @@ public final class ModItems {
             String name, RegistryObject<T> block, Rarity rarity) {
         return ITEMS.register(name, () -> new BlockItem(block.get(),
                 new Item.Properties().rarity(rarity).fireResistant()));
+    }
+
+    private static RegistryObject<FacilityDoorItem> doorItem(String name,
+                                                            RegistryObject<com.apexballistics.block.FacilityDoorBlock> block,
+                                                            DoorKind kind) {
+        return ITEMS.register(name, () -> new FacilityDoorItem(block.get(), kind,
+                new Item.Properties().rarity(Rarity.UNCOMMON).fireResistant()));
     }
 
     private ModItems() {

@@ -61,5 +61,32 @@
         "stream": false
       }
     ]
+  },
+  "air_raid_siren": {
+    "subtitle": "subtitles.apexballistics.air_raid_siren",
+    "sounds": [
+      {
+        "name": "apexballistics:air_raid_siren",
+        "stream": false
+      }
+    ]
+  },
+  "industrial_siren": {
+    "subtitle": "subtitles.apexballistics.industrial_siren",
+    "sounds": [
+      {
+        "name": "apexballistics:industrial_siren",
+        "stream": false
+      }
+    ]
+  },
+  "nuclear_siren": {
+    "subtitle": "subtitles.apexballistics.nuclear_siren",
+    "sounds": [
+      {
+        "name": "apexballistics:nuclear_siren",
+        "stream": false
+      }
+    ]
   }
 }

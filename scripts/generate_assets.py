@@ -7,29 +7,52 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from catalog import (
+    all_16_build_ids,
+    door_ids,
+    is_glass,
+    new_build_ids,
+    siren_ids,
+)
 from obj_meshes import (
     COMPONENT_OBJ,
     HANDHELD_OBJ,
     MISSILE_OBJ,
     OBJ_BLOCKS,
     ObjBuilder,
+    add_air_raid_horns,
+    add_air_raid_siren_base,
+    add_cable_block_mesh,
+    add_cable_item_mesh,
     add_ciws_item_mesh,
     add_ciws_turret,
     add_component_mesh,
-    add_door_item_mesh,
-    add_door_mesh,
+    add_facility_door_item_mesh,
+    add_facility_door_mesh,
     add_handheld_mesh,
-    add_hatch_mesh,
+    add_industrial_siren_mesh,
     add_laser_head,
     add_laser_item_mesh,
     add_launcher_mesh,
     add_missile_mesh,
+    add_nuclear_horn,
+    add_nuclear_siren_base,
     add_radar_base_mesh,
     add_radar_dish_mesh,
     add_radar_item_mesh,
+    add_showcase_mesh,
     add_system_mesh,
 )
-from textures import armor_layer, block_texture, item_texture, launcher_gui_texture, write_png
+from textures import (
+    armor_layer,
+    block_texture,
+    build16_texture,
+    item_texture,
+    launcher_gui_texture,
+    showcase_gui_texture,
+    siren_gui_texture,
+    write_png,
+)
 
 ROOT = Path("/workspace/src/main/resources")
 ASSETS = ROOT / "assets" / "apexballistics"
@@ -54,17 +77,17 @@ HANDHELD = {"gauss_rifle", "railgun", "plasma_blade", "manpads", "jammer"}
 LAUNCHER_BLOCKS = {
     "icbm_silo", "slbm_tube", "cruise_pad", "sam_battery", "mobile_launcher", "vls"
 }
-BLOCKS = [
+HARDWARE_BLOCKS = [
     "apex_alloy_block", *sorted(LAUNCHER_BLOCKS), "radar", "missile_assembly",
     "ciws", "laser_defense", "passive_radar", "command_console", "submarine_control",
     "missile_rack", "loading_crane", "propellant_refinery", "maintenance_station",
-    "capacitor_charger", "reinforced_concrete", "white_reinforced_concrete",
-    "black_reinforced_concrete", "olive_reinforced_concrete", "hazard_concrete",
-    "blast_steel", "bunker_glass",
+    "capacitor_charger", *siren_ids(), "cable", "missile_showcase",
 ]
-DOORS = ["blast_door", "security_door"]
-TRAPDOORS = ["silo_hatch"]
-ALL_BLOCKS = BLOCKS + DOORS + TRAPDOORS
+BUILD_16 = all_16_build_ids()
+NEW_BUILD = new_build_ids()
+DOORS = door_ids()
+ALL_BLOCKS = HARDWARE_BLOCKS + BUILD_16 + DOORS + ["door_part"]
+BLOCKS = HARDWARE_BLOCKS + BUILD_16
 
 
 def write_json(path: Path, obj) -> None:
@@ -116,6 +139,20 @@ def main() -> None:
         })
 
     for name in BLOCKS:
+        if name in BUILD_16:
+            write_png(tex_block / f"{name}.png", 16, 16, build16_texture(name), upscale=False)
+            model = {
+                "parent": "minecraft:block/cube_all",
+                "textures": {"all": f"apexballistics:block/{name}"},
+            }
+            if is_glass(name):
+                model["render_type"] = "minecraft:translucent"
+            write_json(models_block / f"{name}.json", model)
+            write_json(models_item / f"{name}.json", {"parent": f"apexballistics:block/{name}"})
+            write_json(blockstates / f"{name}.json", {
+                "variants": {"": {"model": f"apexballistics:block/{name}"}}
+            })
+            continue
         write_png(tex_block / f"{name}.png", 512, 512, block_texture(name))
         if name not in OBJ_BLOCKS:
             write_json(models_block / f"{name}.json", {
@@ -132,6 +169,15 @@ def main() -> None:
                     "facing=east": {"model": f"apexballistics:block/{name}", "y": 90},
                 }
             })
+        elif name in siren_ids() or name == "cable":
+            write_json(blockstates / f"{name}.json", {
+                "variants": {
+                    "facing=north": {"model": f"apexballistics:block/{name}"},
+                    "facing=south": {"model": f"apexballistics:block/{name}", "y": 180},
+                    "facing=west": {"model": f"apexballistics:block/{name}", "y": 270},
+                    "facing=east": {"model": f"apexballistics:block/{name}", "y": 90},
+                }
+            })
         else:
             write_json(blockstates / f"{name}.json", {
                 "variants": {"": {"model": f"apexballistics:block/{name}"}}
@@ -139,70 +185,24 @@ def main() -> None:
 
     for name in DOORS:
         write_png(tex_block / f"{name}.png", 512, 512, block_texture(name))
-        write_png(tex_block / f"{name}_bottom.png", 512, 512, block_texture(name))
-        write_png(tex_block / f"{name}_top.png", 512, 512, block_texture(name))
         variants = {}
-        closed_rotation = {"east": 0, "north": 270, "south": 90, "west": 180}
-        open_left_rotation = {"east": 90, "north": 0, "south": 180, "west": 270}
-        open_right_rotation = {"east": 270, "north": 180, "south": 0, "west": 90}
-        for facing in ("east", "north", "south", "west"):
-            for half in ("lower", "upper"):
-                for hinge in ("left", "right"):
-                    for opened in (False, True):
-                        suffix = f"{'bottom' if half == 'lower' else 'top'}_{hinge}"
-                        if opened:
-                            suffix += "_open"
-                        rotation = (open_left_rotation if hinge == "left" else open_right_rotation)[facing] \
-                            if opened else closed_rotation[facing]
-                        value = {"model": f"apexballistics:block/{name}_{suffix}"}
-                        if rotation:
-                            value["y"] = rotation
-                        key = f"facing={facing},half={half},hinge={hinge},open={str(opened).lower()}"
-                        variants[key] = value
+        rotation = {"north": 0, "east": 90, "south": 180, "west": 270}
+        for facing, yaw in rotation.items():
+            for opened in (False, True):
+                model_name = f"apexballistics:block/{name}" + ("_open" if opened else "")
+                value = {"model": model_name}
+                if yaw:
+                    value["y"] = yaw
+                variants[f"facing={facing},open={str(opened).lower()}"] = value
         write_json(blockstates / f"{name}.json", {"variants": variants})
-        for half in ("bottom", "top"):
-            for hinge in ("left", "right"):
-                for opened in (False, True):
-                    suffix = f"{half}_{hinge}" + ("_open" if opened else "")
-                    door_mesh = ObjBuilder(f"{name}_{suffix}")
-                    add_door_mesh(door_mesh, name, suffix)
-                    door_mesh.write(models_block)
-                    write_json(models_block / f"{name}_{suffix}.json", {
-                        "loader": "forge:obj",
-                        "model": f"apexballistics:models/block/{name}_{suffix}.obj",
-                        "flip_v": True,
-                        "automatic_culling": False,
-                        "shade_quads": True,
-                        "textures": {
-                            "texture0": f"apexballistics:block/{name}",
-                            "particle": f"apexballistics:block/{name}",
-                        },
-                    })
-        door_item = ObjBuilder(name)
-        add_door_item_mesh(door_item, name)
-        door_item.write(models_item)
-
-    for name in TRAPDOORS:
-        write_png(tex_block / f"{name}.png", 512, 512, block_texture(name))
-        variants = {}
-        rotation = {"east": 90, "north": 0, "south": 180, "west": 270}
-        for facing in ("east", "north", "south", "west"):
-            for half in ("bottom", "top"):
-                for opened in (False, True):
-                    suffix = "open" if opened else half
-                    value = {"model": f"apexballistics:block/{name}_{suffix}"}
-                    if opened and rotation[facing]:
-                        value["y"] = rotation[facing]
-                    key = f"facing={facing},half={half},open={str(opened).lower()}"
-                    variants[key] = value
-        write_json(blockstates / f"{name}.json", {"variants": variants})
-        for suffix in ("bottom", "top", "open"):
-            hatch = ObjBuilder(f"{name}_{suffix}")
-            add_hatch_mesh(hatch, suffix)
-            hatch.write(models_block)
-            write_json(models_block / f"{name}_{suffix}.json", {
+        for opened in (False, True):
+            suffix = f"{name}_open" if opened else name
+            door_mesh = ObjBuilder(suffix)
+            add_facility_door_mesh(door_mesh, name, opened)
+            door_mesh.write(models_block)
+            write_json(models_block / f"{suffix}.json", {
                 "loader": "forge:obj",
-                "model": f"apexballistics:models/block/{name}_{suffix}.obj",
+                "model": f"apexballistics:models/block/{suffix}.obj",
                 "flip_v": True,
                 "automatic_culling": False,
                 "shade_quads": True,
@@ -211,9 +211,33 @@ def main() -> None:
                     "particle": f"apexballistics:block/{name}",
                 },
             })
-        hatch_item = ObjBuilder(name)
-        add_hatch_mesh(hatch_item, "bottom")
-        hatch_item.write(models_item)
+        door_item = ObjBuilder(name)
+        add_facility_door_item_mesh(door_item, name)
+        door_item.write(models_item)
+        write_json(models_item / f"{name}.json", {
+            "loader": "forge:obj",
+            "model": f"apexballistics:models/item/{name}.obj",
+            "flip_v": True,
+            "automatic_culling": False,
+            "shade_quads": True,
+            "textures": {
+                "texture0": f"apexballistics:block/{name}",
+                "particle": f"apexballistics:block/{name}",
+            },
+            "display": {
+                "gui": {"rotation": [25, 225, 0], "translation": [0, 0, 0], "scale": [0.42, 0.42, 0.42]},
+                "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.28, 0.28, 0.28]},
+                "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [0.5, 0.5, 0.5]},
+            },
+        })
+
+    write_json(blockstates / "door_part.json", {
+        "multipart": [{"apply": {"model": "apexballistics:block/door_part"}}]
+    })
+    write_json(models_block / "door_part.json", {
+        "parent": "minecraft:block/block",
+        "textures": {"particle": "apexballistics:block/blast_steel"},
+    })
 
     item_display = {
         "gui": {"rotation": [25, 225, 0], "translation": [0, 0, 0], "scale": [0.72, 0.72, 0.72]},
@@ -221,6 +245,13 @@ def main() -> None:
         "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [0.90, 0.90, 0.90]},
         "thirdperson_righthand": {"rotation": [0, 90, 55], "translation": [0, 3, 1], "scale": [0.55, 0.55, 0.55]},
         "firstperson_righthand": {"rotation": [0, 90, 25], "translation": [1, 2, 1], "scale": [0.60, 0.60, 0.60]},
+    }
+    missile_display = {
+        "gui": {"rotation": [25, 225, 0], "translation": [0, 1, 0], "scale": [0.22, 0.22, 0.22]},
+        "ground": {"rotation": [0, 0, 0], "translation": [0, 4, 0], "scale": [0.28, 0.28, 0.28]},
+        "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [1.00, 1.00, 1.00]},
+        "thirdperson_righthand": {"rotation": [0, 90, 55], "translation": [0, 4, 1], "scale": [0.18, 0.18, 0.18]},
+        "firstperson_righthand": {"rotation": [0, 90, 25], "translation": [1, 2, 1], "scale": [0.20, 0.20, 0.20]},
     }
     weapon_display = {
         "gui": {"rotation": [45, 225, 0], "translation": [0, 2, 0], "scale": [0.85, 0.85, 0.85]},
@@ -252,7 +283,7 @@ def main() -> None:
         write_json(models_item / f"{name}.json", obj_descriptor(
             f"apexballistics:models/item/{name}.obj",
             f"apexballistics:item/{name}",
-            item_display,
+            missile_display,
         ))
 
     for name in sorted(HANDHELD_OBJ):
@@ -280,6 +311,16 @@ def main() -> None:
         mesh = ObjBuilder(name)
         if name == "radar":
             add_radar_base_mesh(mesh)
+        elif name == "air_raid_siren":
+            add_air_raid_siren_base(mesh)
+        elif name == "industrial_siren":
+            add_industrial_siren_mesh(mesh)
+        elif name == "nuclear_warning_siren":
+            add_nuclear_siren_base(mesh)
+        elif name == "cable":
+            add_cable_block_mesh(mesh)
+        elif name == "missile_showcase":
+            add_showcase_mesh(mesh)
         else:
             add_system_mesh(mesh, name)
         mesh.write(models_block)
@@ -315,6 +356,37 @@ def main() -> None:
                 "apexballistics:block/laser_defense",
                 item_display,
             ))
+        elif name == "cable":
+            cable_item = ObjBuilder("cable")
+            add_cable_item_mesh(cable_item)
+            cable_item.write(models_item)
+            write_json(models_item / "cable.json", obj_descriptor(
+                "apexballistics:models/item/cable.obj",
+                "apexballistics:block/cable",
+                item_display,
+            ))
+        elif name == "air_raid_siren":
+            siren_item = ObjBuilder("air_raid_siren")
+            add_air_raid_siren_base(siren_item)
+            with siren_item.at((0.5, 1.38, 0.5)):
+                add_air_raid_horns(siren_item)
+            siren_item.write(models_item)
+            write_json(models_item / "air_raid_siren.json", obj_descriptor(
+                "apexballistics:models/item/air_raid_siren.obj",
+                "apexballistics:block/air_raid_siren",
+                item_display,
+            ))
+        elif name == "nuclear_warning_siren":
+            nuke_item = ObjBuilder("nuclear_warning_siren")
+            add_nuclear_siren_base(nuke_item)
+            with nuke_item.at((0.5, 2.28, 0.5)):
+                add_nuclear_horn(nuke_item)
+            nuke_item.write(models_item)
+            write_json(models_item / "nuclear_warning_siren.json", obj_descriptor(
+                "apexballistics:models/item/nuclear_warning_siren.obj",
+                "apexballistics:block/nuclear_warning_siren",
+                item_display,
+            ))
         else:
             write_json(models_item / f"{name}.json", descriptor | {"display": item_display})
 
@@ -325,19 +397,6 @@ def main() -> None:
         write_json(models_item / f"{name}.json", obj_descriptor(
             f"apexballistics:models/item/{name}.obj",
             f"apexballistics:item/{name}",
-            item_display,
-        ))
-
-    for name in DOORS:
-        write_json(models_item / f"{name}.json", obj_descriptor(
-            f"apexballistics:models/item/{name}.obj",
-            f"apexballistics:block/{name}",
-            item_display,
-        ))
-    for name in TRAPDOORS:
-        write_json(models_item / f"{name}.json", obj_descriptor(
-            f"apexballistics:models/item/{name}.obj",
-            f"apexballistics:block/{name}",
             item_display,
         ))
 
@@ -365,6 +424,22 @@ def main() -> None:
         "apexballistics:block/laser_defense",
         item_display,
     ))
+    horns = ObjBuilder("air_raid_horn_component")
+    add_air_raid_horns(horns)
+    horns.write(models_item)
+    write_json(models_item / "air_raid_horn_component.json", obj_descriptor(
+        "apexballistics:models/item/air_raid_horn_component.obj",
+        "apexballistics:block/air_raid_siren",
+        item_display,
+    ))
+    nuke_horn = ObjBuilder("nuclear_horn_component")
+    add_nuclear_horn(nuke_horn)
+    nuke_horn.write(models_item)
+    write_json(models_item / "nuclear_horn_component.json", obj_descriptor(
+        "apexballistics:models/item/nuclear_horn_component.obj",
+        "apexballistics:block/nuclear_warning_siren",
+        item_display,
+    ))
 
     write_png(tex_armor / "apex_composite_layer_1.png", 512, 256, armor_layer(1))
     write_png(tex_armor / "apex_composite_layer_2.png", 512, 256, armor_layer(2))
@@ -372,6 +447,9 @@ def main() -> None:
     for launcher in ("silo", "tube", "pad", "sam_battery", "mobile", "vls"):
         write_png(tex_gui / f"launcher_{launcher}.png", 512, 512,
                   launcher_gui_texture(launcher))
+    for siren in siren_ids():
+        write_png(tex_gui / f"siren_{siren}.png", 512, 512, siren_gui_texture(siren))
+    write_png(tex_gui / "missile_showcase.png", 512, 512, showcase_gui_texture())
 
     recipes = DATA / "recipe"
     recipes.mkdir(parents=True, exist_ok=True)
@@ -654,6 +732,7 @@ def main() -> None:
         "passive_radar", "command_console", "submarine_control", "missile_rack",
         "loading_crane", "propellant_refinery", "maintenance_station",
         "capacitor_charger",
+        *siren_ids(), "cable", "missile_showcase",
     ]
     for name in infrastructure:
         write_json(recipes / f"{name}.json", shaped(f"apexballistics:{name}", 1, [
@@ -694,6 +773,36 @@ def main() -> None:
         "G": item_ing("minecraft:glass"),
         "O": item_ing("minecraft:obsidian"),
     }))
+    dye_items = {
+        "white": "minecraft:white_dye", "orange": "minecraft:orange_dye",
+        "magenta": "minecraft:magenta_dye", "light_blue": "minecraft:light_blue_dye",
+        "yellow": "minecraft:yellow_dye", "lime": "minecraft:lime_dye",
+        "pink": "minecraft:pink_dye", "gray": "minecraft:gray_dye",
+        "light_gray": "minecraft:light_gray_dye", "cyan": "minecraft:cyan_dye",
+        "purple": "minecraft:purple_dye", "blue": "minecraft:blue_dye",
+        "brown": "minecraft:brown_dye", "green": "minecraft:green_dye",
+        "red": "minecraft:red_dye", "black": "minecraft:black_dye",
+    }
+    for name in NEW_BUILD:
+        if name.startswith("steel_plate"):
+            write_json(recipes / f"{name}.json", shapeless(f"apexballistics:{name}", 4, [
+                item_ing("apexballistics:blast_steel"), item_ing("minecraft:iron_ingot"),
+            ]))
+        elif name.startswith("steel_panel"):
+            write_json(recipes / f"{name}.json", shapeless(f"apexballistics:{name}", 4, [
+                item_ing("apexballistics:blast_steel"), item_ing("minecraft:copper_ingot"),
+            ]))
+        elif name.startswith("floor_marking"):
+            write_json(recipes / f"{name}.json", shapeless(f"apexballistics:{name}", 4, [
+                item_ing("apexballistics:reinforced_concrete"), item_ing("minecraft:yellow_dye"),
+            ]))
+        else:
+            color = next(c for c in sorted(dye_items, key=len, reverse=True) if name.endswith("_" + c))
+            base = "minecraft:glass" if "glass" in name else "minecraft:gray_concrete"
+            write_json(recipes / f"{name}.json", shapeless(f"apexballistics:{name}", 4, [
+                item_ing(base), item_ing(dye_items[color]),
+                item_ing("minecraft:iron_ingot"),
+            ]))
     for name in DOORS:
         write_json(recipes / f"{name}.json", shaped(f"apexballistics:{name}", 1, [
             "SS", "CC", "SS"
@@ -711,6 +820,12 @@ def main() -> None:
 
     loot = DATA / "loot_table" / "blocks"
     for name in ALL_BLOCKS:
+        if name == "door_part":
+            write_json(loot / f"{name}.json", {
+                "type": "minecraft:block",
+                "pools": [],
+            })
+            continue
         write_json(loot / f"{name}.json", {
             "type": "minecraft:block",
             "pools": [{
@@ -750,6 +865,10 @@ def main() -> None:
     lang["item.apexballistics.radar_dish_component"] = "Radar Dish"
     lang["item.apexballistics.ciws_turret_component"] = "CIWS Turret"
     lang["item.apexballistics.laser_head_component"] = "Laser Emitter"
+    lang["item.apexballistics.air_raid_horn_component"] = "Air Raid Horns"
+    lang["item.apexballistics.nuclear_horn_component"] = "Civil Defense Horn"
+    lang["itemGroup.apexballistics.build"] = "Apex Build Blocks"
+    lang["block.apexballistics.door_part"] = "Facility Door Segment"
     lang["entity.apexballistics.flare"] = "Countermeasure Flare"
     lang["item.apexballistics.interceptor.desc"] = "High-altitude interceptor optimized for hostile missiles."
     lang["item.apexballistics.missile_module.desc"] = "Install at a Missile Assembly Station."
@@ -782,6 +901,25 @@ def main() -> None:
         "screen.apexballistics.airburst": "Airburst setting: %s blocks",
         "screen.apexballistics.target": "Target grid: X %s / Z %s",
         "screen.apexballistics.no_target": "Target grid: UNPROGRAMMED",
+        "screen.apexballistics.siren.air_raid_siren": "Air Raid Siren Control",
+        "screen.apexballistics.siren.industrial_siren": "Industrial Horn Control",
+        "screen.apexballistics.siren.nuclear_warning_siren": "Civil Defense Siren Control",
+        "screen.apexballistics.siren.power": "POWER",
+        "screen.apexballistics.siren.auto": "AUTO ALERT",
+        "screen.apexballistics.siren.sound": "SPEAKER",
+        "screen.apexballistics.siren.test": "TEST WAIL",
+        "screen.apexballistics.siren.linked": "Radar link: %s",
+        "screen.apexballistics.siren.unlinked": "Radar link: NONE — use Cable",
+        "screen.apexballistics.siren.sounding": "SIREN ACTIVE",
+        "screen.apexballistics.siren.silent": "Standby",
+        "screen.apexballistics.showcase": "Missile Showcase",
+        "screen.apexballistics.showcase.empty": "No round loaded",
+        "message.apexballistics.cable_start": "Cable start locked.",
+        "message.apexballistics.cable_linked": "Cable linked radar to siren.",
+        "message.apexballistics.cable_invalid": "Cable only links a radar to a siren.",
+        "message.apexballistics.cable_cleared": "Cable start cleared.",
+        "message.apexballistics.siren_alert": "AUTO ALERT: hostile missile inbound.",
+        "message.apexballistics.door_blocked": "Not enough space for this door.",
         "tooltip.apexballistics.guidance": "Guidance: %s",
         "tooltip.apexballistics.payload": "Payload: %s",
         "tooltip.apexballistics.fuse": "Fuse: %s",
@@ -827,6 +965,9 @@ def main() -> None:
         "heavy_explosion": "A strategic warhead detonates",
         "light_explosion": "A missile warhead detonates",
         "radar_servo": "Radar servos sweep",
+        "air_raid_siren": "An air-raid siren wails",
+        "industrial_siren": "An industrial horn blasts",
+        "nuclear_siren": "A civil-defense siren wails",
     }
     for sound, subtitle in sound_subtitles.items():
         lang[f"subtitles.apexballistics.{sound}"] = subtitle
@@ -841,9 +982,29 @@ def main() -> None:
         }
         for name in (
             "ballistic_launch", "cruise_launch", "interceptor_launch",
-            "missile_flight", "heavy_explosion", "light_explosion", "radar_servo"
+            "missile_flight", "heavy_explosion", "light_explosion", "radar_servo",
+            "air_raid_siren", "industrial_siren", "nuclear_siren",
         )
     })
+    catalog_java = Path("/workspace/src/main/java/com/apexballistics/registry/BuildCatalog.java")
+    ids = ",\n            ".join(f'"{block_id}"' for block_id in NEW_BUILD)
+    catalog_java.write_text(
+        "package com.apexballistics.registry;\n\n"
+        "/** Generated by scripts/generate_assets.py — 16x16 build block IDs. */\n"
+        "public final class BuildCatalog {\n"
+        "    public static final String[] IDS = {\n            " + ids + "\n    };\n\n"
+        "    public static boolean isGlass(String id) {\n"
+        "        return id.contains(\"glass\");\n"
+        "    }\n\n"
+        "    private BuildCatalog() {\n"
+        "    }\n"
+        "}\n"
+    )
+    for leftover in models_block.glob("*"):
+        name = leftover.name
+        if any(token in name for token in ("_bottom_left", "_bottom_right", "_top_left", "_top_right",
+                                           "silo_hatch_bottom", "silo_hatch_top")):
+            leftover.unlink(missing_ok=True)
     print("generated assets")
 
 

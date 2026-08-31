@@ -3,7 +3,9 @@ package com.apexballistics.registry;
 import com.apexballistics.ApexBallistics;
 import com.apexballistics.blockentity.DefenseSystemBlockEntity;
 import com.apexballistics.blockentity.LauncherBlockEntity;
+import com.apexballistics.blockentity.MissileShowcaseBlockEntity;
 import com.apexballistics.blockentity.RadarBlockEntity;
+import com.apexballistics.blockentity.SirenBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -40,6 +42,17 @@ public final class ModBlockEntities {
                     ModBlocks.MAINTENANCE_STATION.get(),
                     ModBlocks.CAPACITOR_CHARGER.get()
             ).build(null));
+
+    public static final RegistryObject<BlockEntityType<SirenBlockEntity>> SIREN = BLOCK_ENTITIES.register("siren",
+            () -> BlockEntityType.Builder.of(SirenBlockEntity::new,
+                    ModBlocks.AIR_RAID_SIREN.get(),
+                    ModBlocks.INDUSTRIAL_SIREN.get(),
+                    ModBlocks.NUCLEAR_WARNING_SIREN.get()
+            ).build(null));
+
+    public static final RegistryObject<BlockEntityType<MissileShowcaseBlockEntity>> SHOWCASE =
+            BLOCK_ENTITIES.register("showcase", () -> BlockEntityType.Builder.of(
+                    MissileShowcaseBlockEntity::new, ModBlocks.MISSILE_SHOWCASE.get()).build(null));
 
     private ModBlockEntities() {
     }

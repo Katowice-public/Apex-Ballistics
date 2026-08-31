@@ -360,7 +360,7 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
             return;
         }
         mirvDeployed = true;
-        int[][] offsets = {{-9, -9}, {-9, 9}, {9, -9}, {9, 9}};
+        int[][] offsets = {{-12, -12}, {-12, 12}, {12, -12}, {12, 12}, {0, -16}, {0, 16}};
         for (int[] offset : offsets) {
             MissileEntity child = new MissileEntity(com.apexballistics.registry.ModEntities.MISSILE.get(), level());
             child.setKind(getKind());
@@ -373,15 +373,18 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
             child.stages = 1;
             child.reliability = reliability;
             child.antiJam = antiJam;
-            child.accuracy = Math.max(1.0f, accuracy * 0.5f);
+            child.accuracy = Math.max(1.0f, accuracy * 0.45f);
+            child.launchQuality = launchQuality;
             child.setTargetPos(targetPos.offset(offset[0], 0, offset[1]));
             Vec3 direction = Vec3.atCenterOf(child.targetPos).subtract(position()).normalize();
-            child.setDeltaMovement(getDeltaMovement().scale(0.45)
-                    .add(direction.scale(getKind().launchSpeed() * 0.7)));
+            child.setDeltaMovement(getDeltaMovement().scale(0.42)
+                    .add(direction.scale(getKind().launchSpeed() * 0.75)));
             level().addFreshEntity(child);
         }
         server.sendParticles(ParticleTypes.FIREWORK, getX(), getY(), getZ(),
-                28, 0.8, 0.8, 0.8, 0.08);
+                40, 1.1, 1.1, 1.1, 0.10);
+        server.playSound(null, blockPosition(), ModSounds.LIGHT_EXPLOSION.get(),
+                SoundSource.HOSTILE, 2.2f, 1.35f);
         discard();
     }
 

@@ -18,6 +18,9 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> HEAVY_EXPLOSION = register("heavy_explosion");
     public static final RegistryObject<SoundEvent> LIGHT_EXPLOSION = register("light_explosion");
     public static final RegistryObject<SoundEvent> RADAR_SERVO = register("radar_servo");
+    public static final RegistryObject<SoundEvent> AIR_RAID_SIREN = register("air_raid_siren");
+    public static final RegistryObject<SoundEvent> INDUSTRIAL_SIREN = register("industrial_siren");
+    public static final RegistryObject<SoundEvent> NUCLEAR_SIREN = register("nuclear_siren");
 
     private static RegistryObject<SoundEvent> register(String name) {
         return SOUNDS.register(name, () -> SoundEvent.createVariableRangeEvent(
