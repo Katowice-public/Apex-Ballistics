@@ -10,8 +10,6 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 
 public final class LauncherScreen extends AbstractContainerScreen<LauncherMenu> {
-    private ResourceLocation panelTexture;
-
     public LauncherScreen(LauncherMenu menu, Inventory inventory, Component title) {
         super(menu, inventory, title);
         imageWidth = 256;
@@ -21,9 +19,6 @@ public final class LauncherScreen extends AbstractContainerScreen<LauncherMenu> 
     @Override
     protected void init() {
         super.init();
-        LauncherType type = menu.launcherType();
-        panelTexture = ResourceLocation.fromNamespaceAndPath("apexballistics",
-                "textures/gui/launcher_" + type.name().toLowerCase() + ".png");
         addRenderableWidget(Button.builder(
                         Component.translatable("screen.apexballistics.launch"),
                         button -> sendButton(0))
@@ -51,10 +46,10 @@ public final class LauncherScreen extends AbstractContainerScreen<LauncherMenu> 
 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
-        if (panelTexture != null) {
-            graphics.blit(panelTexture, leftPos, topPos, 0.0f, 0.0f,
-                    imageWidth, imageHeight, 512, 512);
-        }
+        ResourceLocation panel = ResourceLocation.fromNamespaceAndPath("apexballistics",
+                "textures/gui/launcher_" + menu.launcherType().name().toLowerCase() + ".png");
+        graphics.blit(panel, leftPos, topPos, 0.0f, 0.0f,
+                imageWidth, imageHeight, 512, 512);
     }
 
     @Override

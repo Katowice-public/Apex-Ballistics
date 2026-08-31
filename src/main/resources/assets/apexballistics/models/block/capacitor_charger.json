@@ -1,6 +1,11 @@
 {
-  "parent": "minecraft:block/cube_all",
+  "loader": "forge:obj",
+  "model": "apexballistics:models/block/capacitor_charger.obj",
+  "flip_v": true,
+  "automatic_culling": false,
+  "shade_quads": true,
   "textures": {
-    "all": "apexballistics:block/capacitor_charger"
+    "texture0": "apexballistics:block/capacitor_charger",
+    "particle": "apexballistics:block/capacitor_charger"
   }
 }

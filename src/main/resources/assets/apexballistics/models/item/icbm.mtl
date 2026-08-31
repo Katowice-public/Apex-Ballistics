@@ -1,12 +1,33 @@
 newmtl body
-Kd 0.82 0.86 0.88
+Kd 0.78 0.80 0.83
 map_Kd #texture0
 newmtl dark
-Kd 0.18 0.20 0.22
+Kd 0.16 0.17 0.19
 map_Kd #texture0
 newmtl accent
-Kd 0.82 0.20 0.12
+Kd 0.82 0.18 0.12
 map_Kd #texture0
 newmtl glass
-Kd 0.20 0.70 0.84
+Kd 0.22 0.62 0.78
+map_Kd #texture0
+newmtl olive
+Kd 0.38 0.44 0.26
+map_Kd #texture0
+newmtl concrete
+Kd 0.58 0.56 0.52
+map_Kd #texture0
+newmtl white
+Kd 0.90 0.91 0.93
+map_Kd #texture0
+newmtl navy
+Kd 0.16 0.28 0.42
+map_Kd #texture0
+newmtl yellow
+Kd 0.86 0.70 0.16
+map_Kd #texture0
+newmtl tire
+Kd 0.07 0.07 0.08
+map_Kd #texture0
+newmtl rust
+Kd 0.42 0.22 0.12
 map_Kd #texture0

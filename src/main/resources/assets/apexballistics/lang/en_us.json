@@ -20,7 +20,7 @@
   "item.apexballistics.sam.desc": "Surface-to-air missile. Homes on flying targets. Use a SAM battery or MANPADS.",
   "item.apexballistics.aam": "AAM",
   "item.apexballistics.aam.desc": "Air-to-air missile. Fire from a MANPADS while airborne or at flying targets.",
-  "item.apexballistics.manpads": "Manpads",
+  "item.apexballistics.manpads": "MANPADS",
   "item.apexballistics.manpads.desc": "Shoulder-fired tube for SAM, AAM, and ALCM rounds. Consumes a missile from your inventory.",
   "item.apexballistics.gauss_rifle": "Gauss Rifle",
   "item.apexballistics.gauss_rifle.desc": "Magnetic coilgun. Fires gauss slugs at extreme velocity.",
@@ -187,5 +187,6 @@
   "subtitles.apexballistics.missile_flight": "A missile engine roars overhead",
   "subtitles.apexballistics.heavy_explosion": "A strategic warhead detonates",
   "subtitles.apexballistics.light_explosion": "A missile warhead detonates",
-  "subtitles.apexballistics.radar_servo": "Radar servos sweep"
+  "subtitles.apexballistics.radar_servo": "Radar servos sweep",
+  "item.apexballistics.radar_dish_component": "Radar Dish"
 }

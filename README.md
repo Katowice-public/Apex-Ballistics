@@ -20,13 +20,14 @@ Build it yourself with `./gradlew build`. The playable jar is `build/libs/apexba
 
 ### 3D flight and animation
 
-Missiles use an articulated 3D in-flight model rather than a flat item sprite.
-Three procedural animations run smoothly on every client without an animation
-library:
+In-flight missiles render the same high-detail OBJ used by the item, oriented
+along their velocity. Three procedural animations run on every client:
 
 1. motor ignition recoil and nozzle pulse;
 2. ballistic roll stabilization;
 3. active guidance-fin corrections (more aggressive on SAMs and AAMs).
+
+Search radar uses a separate parabolic dish OBJ that rotates on a pedestal.
 
 ### Missiles
 
@@ -136,3 +137,11 @@ The guidance, flight profiles, arming delay, target acquisition, trails, and
 relative yields are designed to feel believable at Minecraft's scale. They are
 gameplay simulations, not real-world weapon-design calculations. Server owners
 can disable terrain damage with `missileGriefing=false`.
+
+## Visuals and audio
+
+Launchers, radar, defense hardware, and all eight missile types use Forge OBJ
+meshes (JSON files are loader stubs only — they do not contain cube geometry).
+Every shipped PNG is a 512-pixel sheet (armor is 512×256 to match vanilla's
+2:1 UV). Each launcher has its own console GUI. Launch, flight, explosion, and
+radar-servo sounds are included; see `SOUND_CREDITS.md`.

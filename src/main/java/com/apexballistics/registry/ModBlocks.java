@@ -30,6 +30,10 @@ public final class ModBlocks {
                 .requiresCorrectToolForDrops();
     }
 
+    private static BlockBehaviour.Properties hardware() {
+        return metal().noOcclusion().isViewBlocking((state, level, pos) -> false);
+    }
+
     private static BlockBehaviour.Properties reinforced(MapColor color) {
         return BlockBehaviour.Properties.of()
                 .mapColor(color)
@@ -42,28 +46,28 @@ public final class ModBlocks {
             () -> new Block(metal().mapColor(MapColor.COLOR_CYAN)));
 
     public static final RegistryObject<LauncherBlock> ICBM_SILO = BLOCKS.register("icbm_silo",
-            () -> new LauncherBlock(metal().mapColor(MapColor.COLOR_GRAY), LauncherType.SILO));
+            () -> new LauncherBlock(hardware().mapColor(MapColor.COLOR_GRAY), LauncherType.SILO));
 
     public static final RegistryObject<LauncherBlock> SLBM_TUBE = BLOCKS.register("slbm_tube",
-            () -> new LauncherBlock(metal().mapColor(MapColor.COLOR_BLUE), LauncherType.TUBE));
+            () -> new LauncherBlock(hardware().mapColor(MapColor.COLOR_BLUE), LauncherType.TUBE));
 
     public static final RegistryObject<LauncherBlock> CRUISE_PAD = BLOCKS.register("cruise_pad",
-            () -> new LauncherBlock(metal().mapColor(MapColor.COLOR_GREEN), LauncherType.PAD));
+            () -> new LauncherBlock(hardware().mapColor(MapColor.COLOR_GREEN), LauncherType.PAD));
 
     public static final RegistryObject<LauncherBlock> SAM_BATTERY = BLOCKS.register("sam_battery",
-            () -> new LauncherBlock(metal().mapColor(MapColor.COLOR_YELLOW), LauncherType.SAM_BATTERY));
+            () -> new LauncherBlock(hardware().mapColor(MapColor.COLOR_YELLOW), LauncherType.SAM_BATTERY));
 
     public static final RegistryObject<LauncherBlock> MOBILE_LAUNCHER = BLOCKS.register("mobile_launcher",
-            () -> new LauncherBlock(metal().mapColor(MapColor.COLOR_GREEN), LauncherType.MOBILE));
+            () -> new LauncherBlock(hardware().mapColor(MapColor.COLOR_GREEN), LauncherType.MOBILE));
 
     public static final RegistryObject<LauncherBlock> VLS = BLOCKS.register("vls",
-            () -> new LauncherBlock(metal().mapColor(MapColor.COLOR_GRAY), LauncherType.VLS));
+            () -> new LauncherBlock(hardware().mapColor(MapColor.COLOR_GRAY), LauncherType.VLS));
 
     public static final RegistryObject<RadarBlock> RADAR = BLOCKS.register("radar",
-            () -> new RadarBlock(metal().mapColor(MapColor.COLOR_LIGHT_BLUE)));
+            () -> new RadarBlock(hardware().mapColor(MapColor.COLOR_LIGHT_BLUE)));
 
     public static final RegistryObject<MissileAssemblyBlock> MISSILE_ASSEMBLY = BLOCKS.register("missile_assembly",
-            () -> new MissileAssemblyBlock(metal().mapColor(MapColor.COLOR_CYAN)));
+            () -> new MissileAssemblyBlock(hardware().mapColor(MapColor.COLOR_CYAN)));
 
     public static final RegistryObject<SystemBlock> CIWS = system("ciws", SystemType.CIWS);
     public static final RegistryObject<SystemBlock> LASER_DEFENSE = system("laser_defense", SystemType.LASER_DEFENSE);
@@ -94,7 +98,7 @@ public final class ModBlocks {
             () -> new TrapDoorBlock(BlockSetType.IRON, reinforced(MapColor.METAL).sound(SoundType.METAL).noOcclusion()));
 
     private static RegistryObject<SystemBlock> system(String name, SystemType type) {
-        return BLOCKS.register(name, () -> new SystemBlock(metal(), type));
+        return BLOCKS.register(name, () -> new SystemBlock(hardware(), type));
     }
 
     private static RegistryObject<Block> reinforcedBlock(String name, MapColor color) {

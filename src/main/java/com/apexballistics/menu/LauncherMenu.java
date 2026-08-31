@@ -17,7 +17,6 @@ public final class LauncherMenu extends AbstractContainerMenu {
 
     private final LauncherBlockEntity launcher;
     private final BlockPos blockPos;
-    private final LauncherType launcherType;
     private final ContainerData data;
 
     public LauncherMenu(int containerId, Inventory inventory, FriendlyByteBuf extraData) {
@@ -36,7 +35,6 @@ public final class LauncherMenu extends AbstractContainerMenu {
         super(ModMenus.LAUNCHER.get(), containerId);
         this.launcher = launcher;
         this.blockPos = launcher == null ? inventory.player.blockPosition() : launcher.getBlockPos();
-        this.launcherType = launcher == null ? LauncherType.SILO : launcher.launcherType();
         this.data = data;
         addDataSlots(data);
     }
@@ -72,9 +70,12 @@ public final class LauncherMenu extends AbstractContainerMenu {
     }
 
     public LauncherType launcherType() {
+        if (launcher != null) {
+            return launcher.launcherType();
+        }
         int ordinal = data.get(0);
         LauncherType[] values = LauncherType.values();
-        return ordinal >= 0 && ordinal < values.length ? values[ordinal] : launcherType;
+        return ordinal >= 0 && ordinal < values.length ? values[ordinal] : LauncherType.SILO;
     }
 
     public int loaded() {
@@ -102,14 +103,23 @@ public final class LauncherMenu extends AbstractContainerMenu {
     }
 
     public boolean hasTarget() {
+        if (launcher != null) {
+            return launcher.getTarget() != null;
+        }
         return data.get(9) != 0;
     }
 
     public int targetX() {
+        if (launcher != null && launcher.getTarget() != null) {
+            return launcher.getTarget().getX();
+        }
         return data.get(7);
     }
 
     public int targetZ() {
+        if (launcher != null && launcher.getTarget() != null) {
+            return launcher.getTarget().getZ();
+        }
         return data.get(8);
     }
 

@@ -3,10 +3,23 @@
 from __future__ import annotations
 
 import json
-import math
-import struct
-import zlib
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from obj_meshes import (
+    HANDHELD_OBJ,
+    MISSILE_OBJ,
+    OBJ_BLOCKS,
+    ObjBuilder,
+    add_handheld_mesh,
+    add_launcher_mesh,
+    add_missile_mesh,
+    add_radar_base_mesh,
+    add_radar_dish_mesh,
+    add_system_mesh,
+)
+from textures import armor_layer, block_texture, item_texture, launcher_gui_texture, write_png
 
 ROOT = Path("/workspace/src/main/resources")
 ASSETS = ROOT / "assets" / "apexballistics"
@@ -42,602 +55,6 @@ BLOCKS = [
 DOORS = ["blast_door", "security_door"]
 TRAPDOORS = ["silo_hatch"]
 ALL_BLOCKS = BLOCKS + DOORS + TRAPDOORS
-
-
-def write_png(path: Path, width: int, height: int, rgba: bytes) -> None:
-    # All shipped textures use a 512×512 source sheet. Minecraft can mip these
-    # down at distance while close views retain panel grain and material detail.
-    target = 512
-    if width != target or height != target:
-        source = rgba
-        detailed = bytearray(target * target * 4)
-        seed = zlib.crc32(path.as_posix().encode("utf-8")) & 0xFFFFFFFF
-        for y in range(target):
-            sy = min(height - 1, y * height // target)
-            for x in range(target):
-                sx = min(width - 1, x * width // target)
-                source_i = (sy * width + sx) * 4
-                target_i = (y * target + x) * 4
-                alpha = source[source_i + 3]
-                if alpha == 0:
-                    continue
-                grain = (((x * 73856093) ^ (y * 19349663) ^ seed) & 15) - 7
-                for channel in range(3):
-                    detailed[target_i + channel] = max(
-                        0, min(255, source[source_i + channel] + grain)
-                    )
-                detailed[target_i + 3] = alpha
-        rgba = bytes(detailed)
-        width = height = target
-
-    def chunk(tag: bytes, data: bytes) -> bytes:
-        return struct.pack(">I", len(data)) + tag + data + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
-
-    raw = b"".join(b"\x00" + rgba[y * width * 4 : (y + 1) * width * 4] for y in range(height))
-    ihdr = struct.pack(">IIBBBBB", width, height, 8, 6, 0, 0, 0)
-    png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b"")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(png)
-
-
-def px(
-    buf: bytearray,
-    w: int,
-    x: int,
-    y: int,
-    color: tuple[int, int, int] | tuple[int, int, int, int],
-) -> None:
-    if 0 <= x < w and 0 <= y < (len(buf) // (w * 4)):
-        if len(color) == 3:
-            color = (*color, 255)
-        i = (y * w + x) * 4
-        buf[i : i + 4] = bytes(color)
-
-
-def fill(buf: bytearray, w: int, h: int, color: tuple[int, int, int, int]) -> None:
-    for y in range(h):
-        for x in range(w):
-            px(buf, w, x, y, color)
-
-
-def rect(buf: bytearray, w: int, x0: int, y0: int, x1: int, y1: int, color: tuple[int, int, int, int]) -> None:
-    for y in range(y0, y1):
-        for x in range(x0, x1):
-            px(buf, w, x, y, color)
-
-
-def hline(buf: bytearray, w: int, x0: int, x1: int, y: int, color: tuple[int, int, int, int]) -> None:
-    for x in range(x0, x1):
-        px(buf, w, x, y, color)
-
-
-def vline(buf: bytearray, w: int, x: int, y0: int, y1: int, color: tuple[int, int, int, int]) -> None:
-    for y in range(y0, y1):
-        px(buf, w, x, y, color)
-
-
-class ObjBuilder:
-    """Small deterministic Wavefront writer for smooth, high-detail meshes."""
-
-    def __init__(self, name: str):
-        self.name = name
-        self.lines = [f"mtllib {name}.mtl", f"o {name}", "s 1"]
-        self.index = 1
-        self.material = ""
-
-    def use(self, material: str) -> None:
-        if self.material != material:
-            self.lines.append(f"usemtl {material}")
-            self.material = material
-
-    def face(self, points: list[tuple[float, float, float]], material: str = "body") -> None:
-        self.use(material)
-        start = self.index
-        uvs = [(0, 0), (1, 0), (1, 1), (0, 1)]
-        for x, y, z in points:
-            self.lines.append(f"v {x:.6f} {y:.6f} {z:.6f}")
-        for u, v in uvs[:len(points)]:
-            self.lines.append(f"vt {u:.6f} {v:.6f}")
-        refs = [f"{start + i}/{start + i}" for i in range(len(points))]
-        self.lines.append("f " + " ".join(refs))
-        self.index += len(points)
-
-    def box(self, x0: float, y0: float, z0: float, x1: float, y1: float, z1: float,
-            material: str = "body") -> None:
-        self.face([(x0, y0, z0), (x1, y0, z0), (x1, y1, z0), (x0, y1, z0)], material)
-        self.face([(x1, y0, z1), (x0, y0, z1), (x0, y1, z1), (x1, y1, z1)], material)
-        self.face([(x0, y0, z1), (x0, y0, z0), (x0, y1, z0), (x0, y1, z1)], material)
-        self.face([(x1, y0, z0), (x1, y0, z1), (x1, y1, z1), (x1, y1, z0)], material)
-        self.face([(x0, y1, z0), (x1, y1, z0), (x1, y1, z1), (x0, y1, z1)], material)
-        self.face([(x0, y0, z1), (x1, y0, z1), (x1, y0, z0), (x0, y0, z0)], material)
-
-    def cylinder(self, start: tuple[float, float, float], end: tuple[float, float, float],
-                 radius: float, segments: int = 32, material: str = "body") -> None:
-        ax = tuple(end[i] - start[i] for i in range(3))
-        length = math.sqrt(sum(value * value for value in ax))
-        axis = tuple(value / length for value in ax)
-        ref = (0.0, 1.0, 0.0) if abs(axis[1]) < 0.9 else (1.0, 0.0, 0.0)
-        side = (
-            axis[1] * ref[2] - axis[2] * ref[1],
-            axis[2] * ref[0] - axis[0] * ref[2],
-            axis[0] * ref[1] - axis[1] * ref[0],
-        )
-        side_len = math.sqrt(sum(value * value for value in side))
-        side = tuple(value / side_len for value in side)
-        up = (
-            side[1] * axis[2] - side[2] * axis[1],
-            side[2] * axis[0] - side[0] * axis[2],
-            side[0] * axis[1] - side[1] * axis[0],
-        )
-
-        def ring(center, angle):
-            return tuple(
-                center[i] + radius * (side[i] * math.cos(angle) + up[i] * math.sin(angle))
-                for i in range(3)
-            )
-
-        for i in range(segments):
-            a0 = math.tau * i / segments
-            a1 = math.tau * (i + 1) / segments
-            self.face([ring(start, a0), ring(start, a1), ring(end, a1), ring(end, a0)], material)
-            self.face([start, ring(start, a1), ring(start, a0)], material)
-            self.face([end, ring(end, a0), ring(end, a1)], material)
-
-    def cone(self, base: tuple[float, float, float], tip: tuple[float, float, float],
-             radius: float, segments: int = 32, material: str = "accent") -> None:
-        ax = tuple(tip[i] - base[i] for i in range(3))
-        length = math.sqrt(sum(value * value for value in ax))
-        axis = tuple(value / length for value in ax)
-        ref = (0.0, 1.0, 0.0) if abs(axis[1]) < 0.9 else (1.0, 0.0, 0.0)
-        side = (
-            axis[1] * ref[2] - axis[2] * ref[1],
-            axis[2] * ref[0] - axis[0] * ref[2],
-            axis[0] * ref[1] - axis[1] * ref[0],
-        )
-        side_len = math.sqrt(sum(value * value for value in side))
-        side = tuple(value / side_len for value in side)
-        up = (
-            side[1] * axis[2] - side[2] * axis[1],
-            side[2] * axis[0] - side[0] * axis[2],
-            side[0] * axis[1] - side[1] * axis[0],
-        )
-
-        def point(angle):
-            return tuple(
-                base[i] + radius * (side[i] * math.cos(angle) + up[i] * math.sin(angle))
-                for i in range(3)
-            )
-
-        for i in range(segments):
-            a0 = math.tau * i / segments
-            a1 = math.tau * (i + 1) / segments
-            self.face([point(a0), point(a1), tip], material)
-            self.face([base, point(a1), point(a0)], material)
-
-    def write(self, directory: Path, texture: str) -> None:
-        directory.mkdir(parents=True, exist_ok=True)
-        (directory / f"{self.name}.obj").write_text("\n".join(self.lines) + "\n")
-        (directory / f"{self.name}.mtl").write_text(
-            "newmtl body\nKd 0.82 0.86 0.88\nmap_Kd #texture0\n"
-            "newmtl dark\nKd 0.18 0.20 0.22\nmap_Kd #texture0\n"
-            "newmtl accent\nKd 0.82 0.20 0.12\nmap_Kd #texture0\n"
-            "newmtl glass\nKd 0.20 0.70 0.84\nmap_Kd #texture0\n"
-        )
-
-
-def add_missile_mesh(mesh: ObjBuilder, kind: str) -> None:
-    profiles = {
-        "icbm": (0.13, 1.70, 0.28),
-        "slbm": (0.14, 1.55, 0.22),
-        "srbm": (0.15, 1.28, 0.25),
-        "alcm": (0.10, 1.10, 0.18),
-        "cruise_missile": (0.10, 1.18, 0.18),
-        "sam": (0.085, 1.35, 0.20),
-        "aam": (0.075, 1.25, 0.18),
-        "interceptor": (0.08, 1.45, 0.22),
-    }
-    radius, height, nose = profiles[kind]
-    y0 = -height * 0.5
-    y1 = height * 0.5 - nose
-    mesh.cylinder((0, y0, 0), (0, y1, 0), radius, 32, "body")
-    mesh.cone((0, y1, 0), (0, height * 0.5, 0), radius, 32, "accent")
-    mesh.cylinder((0, y0 - 0.08, 0), (0, y0, 0), radius * 0.72, 24, "dark")
-    # Four clipped-delta fins, plus broad wings for cruise profiles.
-    fin_span = radius * (3.1 if kind in {"alcm", "cruise_missile"} else 2.1)
-    fin_y0 = y0 + height * 0.10
-    fin_y1 = y0 + height * (0.46 if kind in {"alcm", "cruise_missile"} else 0.28)
-    thickness = 0.018
-    mesh.box(-fin_span, fin_y0, -thickness, -radius, fin_y1, thickness, "dark")
-    mesh.box(radius, fin_y0, -thickness, fin_span, fin_y1, thickness, "dark")
-    mesh.box(-thickness, fin_y0, -fin_span, thickness, fin_y1, -radius, "dark")
-    mesh.box(-thickness, fin_y0, radius, thickness, fin_y1, fin_span, "dark")
-    # Stage bands and guidance section paneling.
-    for fraction in (0.18, 0.48, 0.72):
-        y = y0 + height * fraction
-        mesh.cylinder((0, y, 0), (0, y + 0.025, 0), radius * 1.025, 32, "accent")
-
-
-def add_launcher_mesh(mesh: ObjBuilder, name: str) -> None:
-    if name == "icbm_silo":
-        mesh.box(0.04, 0.0, 0.04, 0.96, 0.18, 0.96, "dark")
-        mesh.cylinder((0.5, 0.10, 0.5), (0.5, 0.55, 0.5), 0.38, 40, "body")
-        mesh.cylinder((0.5, 0.12, 0.5), (0.5, 1.52, 0.5), 0.11, 32, "body")
-        mesh.cone((0.5, 1.52, 0.5), (0.5, 1.72, 0.5), 0.11, 32, "accent")
-        for x in (0.13, 0.87):
-            mesh.cylinder((x, 0.16, 0.5), (x, 0.30, 0.5), 0.055, 20, "accent")
-    elif name == "slbm_tube":
-        mesh.cylinder((0.5, 0.02, 0.5), (0.5, 1.35, 0.5), 0.31, 40, "dark")
-        mesh.cylinder((0.5, 0.10, 0.5), (0.5, 1.55, 0.5), 0.105, 32, "body")
-        mesh.cone((0.5, 1.55, 0.5), (0.5, 1.72, 0.5), 0.105, 32, "accent")
-        for y in (0.20, 0.65, 1.10):
-            mesh.cylinder((0.5, y, 0.5), (0.5, y + 0.035, 0.5), 0.34, 40, "accent")
-    elif name == "cruise_pad":
-        mesh.box(0.04, 0.0, 0.06, 0.96, 0.14, 0.94, "dark")
-        mesh.box(0.14, 0.14, 0.28, 0.86, 0.22, 0.72, "body")
-        mesh.cylinder((0.5, 0.29, 0.78), (0.5, 1.02, 0.18), 0.09, 32, "body")
-        mesh.cone((0.5, 1.02, 0.18), (0.5, 1.14, 0.08), 0.09, 32, "accent")
-        mesh.box(0.18, 0.20, 0.76, 0.28, 0.80, 0.84, "dark")
-        mesh.box(0.72, 0.20, 0.76, 0.82, 0.80, 0.84, "dark")
-    elif name == "sam_battery":
-        mesh.box(0.05, 0.0, 0.05, 0.95, 0.20, 0.95, "dark")
-        mesh.cylinder((0.5, 0.18, 0.5), (0.5, 0.42, 0.5), 0.31, 36, "body")
-        for x in (0.34, 0.66):
-            for z in (0.42, 0.62):
-                mesh.cylinder((x, 0.42, z + 0.20), (x, 1.25, z - 0.28), 0.065, 24, "body")
-                mesh.cone((x, 1.25, z - 0.28), (x, 1.34, z - 0.34), 0.065, 24, "accent")
-    elif name == "mobile_launcher":
-        mesh.box(0.03, 0.16, 0.12, 0.97, 0.42, 0.88, "dark")
-        mesh.box(0.62, 0.42, 0.18, 0.94, 0.78, 0.82, "body")
-        for x in (0.18, 0.48, 0.78):
-            mesh.cylinder((x, 0.15, 0.08), (x, 0.15, 0.18), 0.12, 24, "dark")
-            mesh.cylinder((x, 0.15, 0.82), (x, 0.15, 0.92), 0.12, 24, "dark")
-        for x in (0.24, 0.40):
-            mesh.cylinder((x, 0.46, 0.72), (x, 1.28, 0.22), 0.08, 28, "body")
-            mesh.cone((x, 1.28, 0.22), (x, 1.38, 0.16), 0.08, 28, "accent")
-    elif name == "vls":
-        mesh.box(0.03, 0.0, 0.03, 0.97, 0.62, 0.97, "dark")
-        for x in (0.28, 0.72):
-            for z in (0.28, 0.72):
-                mesh.cylinder((x, 0.58, z), (x, 0.72, z), 0.16, 32, "body")
-                mesh.cylinder((x, 0.70, z), (x, 0.73, z), 0.13, 32, "accent")
-
-
-def add_radar_base_mesh(mesh: ObjBuilder) -> None:
-    mesh.box(0.08, 0.0, 0.08, 0.92, 0.18, 0.92, "dark")
-    mesh.cylinder((0.5, 0.16, 0.5), (0.5, 0.70, 0.5), 0.18, 32, "body")
-    mesh.cylinder((0.5, 0.68, 0.5), (0.5, 0.82, 0.5), 0.30, 40, "dark")
-    mesh.box(0.18, 0.18, 0.18, 0.34, 0.48, 0.34, "accent")
-
-
-def add_radar_dish_mesh(mesh: ObjBuilder) -> None:
-    center = (0.0, 0.0, 0.0)
-    rings = 8
-    segments = 40
-    for ring in range(rings):
-        r0 = 0.46 * ring / rings
-        r1 = 0.46 * (ring + 1) / rings
-        z0 = 0.38 * (r0 / 0.46) ** 2
-        z1 = 0.38 * (r1 / 0.46) ** 2
-        for i in range(segments):
-            a0 = math.tau * i / segments
-            a1 = math.tau * (i + 1) / segments
-            p00 = (r0 * math.cos(a0), r0 * math.sin(a0), z0)
-            p01 = (r0 * math.cos(a1), r0 * math.sin(a1), z0)
-            p11 = (r1 * math.cos(a1), r1 * math.sin(a1), z1)
-            p10 = (r1 * math.cos(a0), r1 * math.sin(a0), z1)
-            mesh.face([p00, p01, p11, p10], "body")
-            mesh.face([p10, p11, p01, p00], "dark")
-    mesh.cylinder((0, 0, 0.12), (0, 0, 0.66), 0.025, 20, "accent")
-    mesh.cylinder((-0.34, 0, 0.30), (0.34, 0, 0.30), 0.018, 16, "dark")
-
-
-def noise_metal(buf: bytearray, w: int, h: int, base: tuple[int, int, int], seed: int) -> None:
-    for y in range(h):
-        for x in range(w):
-            n = ((x * 13 + y * 31 + seed * 17) ^ (x * y + seed)) & 15
-            shade = n - 8
-            px(buf, w, x, y, (
-                max(0, min(255, base[0] + shade * 3)),
-                max(0, min(255, base[1] + shade * 3)),
-                max(0, min(255, base[2] + shade * 3)),
-                255,
-            ))
-
-
-def item_texture(name: str) -> bytes:
-    w = h = 16
-    buf = bytearray(w * h * 4)
-    fill(buf, w, h, (0, 0, 0, 0))
-    palettes = {
-        "apex_alloy": ((20, 80, 90), (40, 210, 220), (180, 255, 255)),
-        "circuit_board": ((20, 70, 30), (40, 160, 50), (220, 180, 40)),
-        "guidance_chip": ((30, 30, 50), (80, 160, 255), (240, 240, 255)),
-        "solid_fuel": ((70, 40, 20), (200, 90, 30), (255, 200, 80)),
-        "warhead": ((50, 50, 50), (180, 40, 40), (240, 220, 80)),
-        "gauss_slug": ((40, 50, 60), (90, 200, 230), (230, 250, 255)),
-        "icbm": ((30, 30, 35), (220, 220, 230), (200, 30, 30)),
-        "slbm": ((15, 30, 70), (50, 110, 180), (220, 230, 255)),
-        "srbm": ((40, 35, 20), (180, 150, 70), (230, 50, 40)),
-        "alcm": ((30, 50, 20), (90, 130, 50), (200, 210, 80)),
-        "cruise_missile": ((25, 25, 25), (70, 70, 70), (180, 180, 40)),
-        "sam": ((50, 45, 20), (200, 170, 60), (40, 40, 40)),
-        "aam": ((40, 50, 60), (170, 190, 210), (80, 200, 255)),
-        "manpads": ((30, 40, 30), (70, 90, 50), (30, 30, 30)),
-        "gauss_rifle": ((20, 25, 30), (40, 80, 100), (80, 220, 255)),
-        "railgun": ((15, 15, 20), (50, 50, 80), (180, 80, 255)),
-        "plasma_blade": ((15, 20, 30), (20, 180, 220), (180, 255, 255)),
-        "targeting_tablet": ((20, 20, 25), (30, 90, 140), (80, 220, 180)),
-        "apex_helmet": ((15, 40, 50), (30, 160, 170), (200, 255, 255)),
-        "apex_chestplate": ((15, 40, 50), (30, 160, 170), (200, 255, 255)),
-        "apex_leggings": ((15, 40, 50), (30, 160, 170), (200, 255, 255)),
-        "apex_boots": ((15, 40, 50), (30, 160, 170), (200, 255, 255)),
-    }
-    if name.startswith("guidance_") or name.endswith("_package"):
-        fallback = ((15, 35, 55), (35, 125, 180), (100, 240, 255))
-    elif "payload" in name or "warhead" in name:
-        fallback = ((55, 18, 18), (170, 45, 35), (255, 185, 60))
-    elif "fuse" in name:
-        fallback = ((55, 40, 12), (190, 135, 30), (255, 235, 110))
-    elif name.endswith("_module"):
-        fallback = ((20, 25, 45), (85, 55, 165), (100, 230, 255))
-    else:
-        fallback = ((25, 35, 42), (65, 125, 145), (185, 245, 255))
-    dark, mid, light = palettes.get(name, fallback)
-
-    if name in {"icbm", "slbm", "srbm", "alcm", "cruise_missile", "sam", "aam", "interceptor"}:
-        # Vertical missile body
-        rect(buf, w, 6, 1, 10, 15, mid)
-        rect(buf, w, 7, 0, 9, 2, light)
-        rect(buf, w, 6, 13, 10, 16, dark)
-        px(buf, w, 5, 13, (*dark, 255))
-        px(buf, w, 10, 13, (*dark, 255))
-        px(buf, w, 4, 14, (*dark, 255))
-        px(buf, w, 11, 14, (*dark, 255))
-        hline(buf, w, 6, 10, 4, (*light, 255))
-        hline(buf, w, 6, 10, 8, (*dark, 255) if name != "icbm" else (*light, 255))
-        if name == "icbm":
-            hline(buf, w, 6, 10, 6, (200, 30, 30, 255))
-            hline(buf, w, 6, 10, 10, (200, 30, 30, 255))
-        if name in {"sam", "aam"}:
-            px(buf, w, 5, 6, (*mid, 255))
-            px(buf, w, 10, 6, (*mid, 255))
-            px(buf, w, 4, 7, (*mid, 255))
-            px(buf, w, 11, 7, (*mid, 255))
-    elif name in {"gauss_rifle", "railgun", "manpads"}:
-        rect(buf, w, 1, 7, 15, 10, mid)
-        rect(buf, w, 12, 6, 16, 11, light)
-        rect(buf, w, 4, 9, 7, 14, dark)
-        rect(buf, w, 6, 5, 9, 8, dark)
-        if name == "railgun":
-            hline(buf, w, 2, 12, 8, (*light, 255))
-        if name == "manpads":
-            rect(buf, w, 1, 6, 15, 11, mid)
-            rect(buf, w, 13, 5, 16, 12, dark)
-    elif name == "plasma_blade":
-        rect(buf, w, 7, 8, 9, 16, dark)
-        rect(buf, w, 6, 7, 10, 9, mid)
-        rect(buf, w, 7, 0, 9, 8, light)
-        px(buf, w, 6, 2, (*light, 255))
-        px(buf, w, 9, 2, (*light, 255))
-    elif name == "targeting_tablet":
-        rect(buf, w, 3, 2, 13, 14, dark)
-        rect(buf, w, 4, 3, 12, 12, mid)
-        rect(buf, w, 5, 5, 11, 10, light)
-        px(buf, w, 6, 13, (*mid, 255))
-        px(buf, w, 9, 13, (*mid, 255))
-    elif name == "apex_alloy":
-        rect(buf, w, 3, 4, 13, 13, mid)
-        rect(buf, w, 4, 5, 12, 12, light)
-        hline(buf, w, 3, 13, 4, (*dark, 255))
-        vline(buf, w, 3, 4, 13, (*dark, 255))
-    elif name == "circuit_board":
-        rect(buf, w, 2, 2, 14, 14, mid)
-        for x, y in [(4, 4), (8, 4), (12, 4), (6, 8), (10, 8), (4, 12), (12, 12)]:
-            px(buf, w, x, y, (*light, 255))
-        hline(buf, w, 4, 12, 6, (*dark, 255))
-        vline(buf, w, 8, 4, 12, (*dark, 255))
-    elif name == "guidance_chip":
-        rect(buf, w, 4, 4, 12, 12, dark)
-        rect(buf, w, 5, 5, 11, 11, mid)
-        px(buf, w, 8, 8, (*light, 255))
-        hline(buf, w, 3, 13, 8, (*mid, 255))
-        vline(buf, w, 8, 3, 13, (*mid, 255))
-    elif name == "solid_fuel":
-        rect(buf, w, 5, 1, 11, 15, mid)
-        rect(buf, w, 6, 2, 10, 14, light)
-        hline(buf, w, 5, 11, 5, (*dark, 255))
-        hline(buf, w, 5, 11, 10, (*dark, 255))
-    elif name == "warhead":
-        rect(buf, w, 5, 3, 11, 14, mid)
-        rect(buf, w, 6, 1, 10, 4, light)
-        rect(buf, w, 6, 8, 10, 12, (200, 40, 40, 255))
-    elif name == "gauss_slug":
-        rect(buf, w, 4, 6, 12, 10, mid)
-        rect(buf, w, 11, 5, 15, 11, light)
-        rect(buf, w, 2, 6, 5, 10, dark)
-    elif name == "apex_helmet":
-        rect(buf, w, 4, 3, 12, 10, mid)
-        rect(buf, w, 5, 6, 11, 9, light)
-        rect(buf, w, 3, 8, 5, 11, dark)
-        rect(buf, w, 11, 8, 13, 11, dark)
-    elif name == "apex_chestplate":
-        rect(buf, w, 3, 3, 13, 14, mid)
-        rect(buf, w, 6, 5, 10, 11, light)
-        vline(buf, w, 8, 4, 12, (*dark, 255))
-    elif name == "apex_leggings":
-        rect(buf, w, 4, 2, 12, 7, mid)
-        rect(buf, w, 4, 7, 8, 15, dark)
-        rect(buf, w, 8, 7, 12, 15, dark)
-        vline(buf, w, 8, 7, 15, (*light, 255))
-    elif name == "apex_boots":
-        rect(buf, w, 3, 8, 7, 15, mid)
-        rect(buf, w, 9, 8, 13, 15, mid)
-        rect(buf, w, 2, 13, 8, 16, dark)
-        rect(buf, w, 8, 13, 14, 16, dark)
-    else:
-        # Generic high-tech component: dark carrier, colored core and contacts.
-        rect(buf, w, 3, 3, 13, 13, dark)
-        rect(buf, w, 5, 5, 11, 11, mid)
-        rect(buf, w, 7, 7, 9, 9, light)
-        for i in range(4, 13, 2):
-            px(buf, w, i, 2, (*light, 255))
-            px(buf, w, i, 13, (*light, 255))
-    return bytes(buf)
-
-
-def block_texture(name: str) -> bytes:
-    w = h = 16
-    buf = bytearray(w * h * 4)
-    bases = {
-        "apex_alloy_block": (20, 140, 150),
-        "icbm_silo": (50, 55, 60),
-        "slbm_tube": (30, 60, 110),
-        "cruise_pad": (50, 80, 40),
-        "sam_battery": (120, 100, 40),
-        "radar": (40, 90, 130),
-    }
-    # Python randomizes hash() between processes, so use a stable seed to keep
-    # generated resources reproducible across developer machines and CI.
-    if "concrete" in name:
-        fallback = (80, 84, 86)
-    elif "laser" in name or "capacitor" in name:
-        fallback = (35, 95, 115)
-    elif name == "bunker_glass":
-        fallback = (75, 145, 165)
-    else:
-        fallback = (55, 65, 70)
-    noise_metal(buf, w, h, bases.get(name, fallback), zlib.crc32(name.encode("utf-8")) & 255)
-    if name == "icbm_silo":
-        rect(buf, w, 4, 4, 12, 12, (20, 20, 22, 255))
-        rect(buf, w, 6, 2, 10, 14, (180, 180, 190, 255))
-        hline(buf, w, 6, 10, 6, (200, 40, 40, 255))
-    elif name == "slbm_tube":
-        rect(buf, w, 5, 1, 11, 15, (20, 40, 80, 255))
-        rect(buf, w, 6, 2, 10, 14, (80, 160, 220, 255))
-    elif name == "cruise_pad":
-        rect(buf, w, 1, 12, 15, 15, (30, 30, 30, 255))
-        rect(buf, w, 6, 4, 10, 13, (90, 140, 50, 255))
-    elif name == "sam_battery":
-        rect(buf, w, 2, 10, 14, 15, (40, 40, 40, 255))
-        rect(buf, w, 7, 2, 10, 12, (210, 180, 70, 255))
-        px(buf, w, 5, 6, (210, 180, 70, 255))
-        px(buf, w, 11, 6, (210, 180, 70, 255))
-    elif name == "radar":
-        rect(buf, w, 7, 8, 9, 16, (30, 30, 30, 255))
-        rect(buf, w, 3, 3, 13, 9, (80, 200, 230, 255))
-        hline(buf, w, 3, 13, 6, (20, 40, 50, 255))
-    elif name == "apex_alloy_block":
-        for i in range(0, 16, 4):
-            hline(buf, w, 0, 16, i, (10, 60, 70, 255))
-            vline(buf, w, i, 0, 16, (10, 60, 70, 255))
-        rect(buf, w, 6, 6, 10, 10, (180, 255, 255, 255))
-    else:
-        hline(buf, w, 0, 16, 3, (25, 30, 34, 255))
-        hline(buf, w, 0, 16, 12, (25, 30, 34, 255))
-        vline(buf, w, 3, 0, 16, (25, 30, 34, 255))
-        vline(buf, w, 12, 0, 16, (25, 30, 34, 255))
-        if name == "hazard_concrete":
-            for i in range(-8, 24, 6):
-                for y in range(16):
-                    x = i + y
-                    if 0 <= x < 16:
-                        px(buf, w, x, y, (230, 185, 25, 255))
-    return bytes(buf)
-
-
-def armor_layer(layer: int) -> bytes:
-    w, h = 64, 32
-    buf = bytearray(w * h * 4)
-    fill(buf, w, h, (0, 0, 0, 0))
-    teal = (25, 120, 130, 255)
-    dark = (10, 40, 50, 255)
-    glow = (80, 230, 240, 255)
-
-    def box(x, y, bw, bh, color):
-        rect(buf, w, x, y, x + bw, y + bh, color)
-
-    if layer == 1:
-        # head
-        box(8, 0, 8, 8, teal)
-        box(8, 8, 8, 8, teal)
-        box(10, 10, 4, 3, glow)
-        # body
-        box(20, 16, 8, 12, teal)
-        box(20, 20, 8, 2, glow)
-        # arms
-        box(40, 16, 4, 12, teal)
-        box(44, 16, 4, 12, teal)
-        # legs
-        box(4, 16, 4, 12, dark)
-        box(8, 16, 4, 12, dark)
-        # overlay bits
-        box(21, 16, 6, 2, dark)
-    else:
-        # leggings layer
-        box(20, 16, 8, 12, teal)
-        box(4, 16, 4, 12, teal)
-        box(8, 16, 4, 12, teal)
-        box(20, 20, 8, 1, glow)
-    return bytes(buf)
-
-
-def missile_entity_texture() -> bytes:
-    """Neutral metal atlas tinted per missile type by the entity renderer."""
-    w, h = 64, 32
-    buf = bytearray(w * h * 4)
-    noise_metal(buf, w, h, (210, 218, 224), 73)
-    # Dark thermal shielding and panel seams make the cuboid model readable.
-    rect(buf, w, 0, 20, 64, 32, (62, 68, 72, 255))
-    for x in range(0, w, 8):
-        vline(buf, w, x, 0, h, (120, 128, 134, 255))
-    for y in (7, 15, 23):
-        hline(buf, w, 0, w, y, (105, 112, 118, 255))
-    rect(buf, w, 16, 0, 28, 8, (45, 48, 52, 255))
-    rect(buf, w, 28, 0, 44, 12, (150, 158, 164, 255))
-    return bytes(buf)
-
-
-def launcher_gui_texture(launcher: str) -> bytes:
-    w = h = 512
-    buf = bytearray(w * h * 4)
-    fill(buf, w, h, (8, 13, 18, 255))
-    accents = {
-        "silo": (235, 72, 62, 255),
-        "tube": (55, 142, 225, 255),
-        "pad": (88, 184, 76, 255),
-        "sam_battery": (226, 185, 55, 255),
-        "mobile": (144, 176, 82, 255),
-        "vls": (160, 92, 220, 255),
-    }
-    accent = accents[launcher]
-    rect(buf, w, 4, 4, 252, 216, (18, 29, 38, 255))
-    rect(buf, w, 8, 8, 248, 34, (28, 43, 53, 255))
-    rect(buf, w, 12, 38, 244, 168, (12, 22, 29, 255))
-    for x in range(12, 245, 16):
-        vline(buf, w, x, 38, 168, (20, 35, 43, 255))
-    for y in range(38, 169, 16):
-        hline(buf, w, 12, 244, y, (20, 35, 43, 255))
-    hline(buf, w, 8, 248, 34, accent)
-    hline(buf, w, 8, 248, 169, accent)
-    rect(buf, w, 14, 172, 122, 200, (24, 36, 42, 255))
-    rect(buf, w, 134, 172, 242, 200, (24, 36, 42, 255))
-    # Distinct instrument motif per launcher class.
-    if launcher in {"silo", "tube", "vls"}:
-        for cx in ((174, 70), (205, 70), (174, 102), (205, 102)):
-            for radius in range(18, 2, -3):
-                color = accent if radius % 2 == 0 else (25, 45, 55, 255)
-                for angle in range(0, 360, 4):
-                    x = int(cx[0] + math.cos(math.radians(angle)) * radius)
-                    y = int(cx[1] + math.sin(math.radians(angle)) * radius)
-                    px(buf, w, x, y, color)
-    elif launcher in {"sam_battery", "mobile"}:
-        for i in range(6):
-            x0 = 150 + i * 13
-            rect(buf, w, x0, 55 + i * 4, x0 + 7, 130 - i * 4, accent)
-    else:
-        for i in range(4):
-            rect(buf, w, 148 + i * 22, 58, 162 + i * 22, 136, accent)
-    return bytes(buf)
 
 
 def write_json(path: Path, obj) -> None:
@@ -679,7 +96,9 @@ def main() -> None:
     blockstates = ASSETS / "blockstates"
 
     for name in ITEMS:
-        write_png(tex_item / f"{name}.png", 16, 16, item_texture(name))
+        write_png(tex_item / f"{name}.png", 512, 512, item_texture(name))
+        if name in MISSILE_OBJ or name in HANDHELD_OBJ:
+            continue
         parent = "minecraft:item/handheld" if name in HANDHELD else "minecraft:item/generated"
         write_json(models_item / f"{name}.json", {
             "parent": parent,
@@ -687,12 +106,13 @@ def main() -> None:
         })
 
     for name in BLOCKS:
-        write_png(tex_block / f"{name}.png", 16, 16, block_texture(name))
-        write_json(models_block / f"{name}.json", {
-            "parent": "minecraft:block/cube_all",
-            "textures": {"all": f"apexballistics:block/{name}"},
-        })
-        write_json(models_item / f"{name}.json", {"parent": f"apexballistics:block/{name}"})
+        write_png(tex_block / f"{name}.png", 512, 512, block_texture(name))
+        if name not in OBJ_BLOCKS:
+            write_json(models_block / f"{name}.json", {
+                "parent": "minecraft:block/cube_all",
+                "textures": {"all": f"apexballistics:block/{name}"},
+            })
+            write_json(models_item / f"{name}.json", {"parent": f"apexballistics:block/{name}"})
         if name in LAUNCHER_BLOCKS:
             write_json(blockstates / f"{name}.json", {
                 "variants": {
@@ -708,8 +128,8 @@ def main() -> None:
             })
 
     for name in DOORS:
-        write_png(tex_block / f"{name}_bottom.png", 16, 16, block_texture("blast_steel"))
-        write_png(tex_block / f"{name}_top.png", 16, 16, block_texture("command_console"))
+        write_png(tex_block / f"{name}_bottom.png", 512, 512, block_texture("blast_steel"))
+        write_png(tex_block / f"{name}_top.png", 512, 512, block_texture("command_console"))
         variants = {}
         closed_rotation = {"east": 0, "north": 270, "south": 90, "west": 180}
         open_left_rotation = {"east": 90, "north": 0, "south": 180, "west": 270}
@@ -746,7 +166,7 @@ def main() -> None:
         })
 
     for name in TRAPDOORS:
-        write_png(tex_block / f"{name}.png", 16, 16, block_texture("blast_steel"))
+        write_png(tex_block / f"{name}.png", 512, 512, block_texture("blast_steel"))
         variants = {}
         rotation = {"east": 90, "north": 0, "south": 180, "west": 270}
         for facing in ("east", "north", "south", "west"):
@@ -768,87 +188,93 @@ def main() -> None:
             "parent": f"apexballistics:block/{name}_bottom"
         })
 
-    obj_missiles = [
-        "icbm", "slbm", "srbm", "alcm", "cruise_missile", "sam", "aam", "interceptor"
-    ]
     item_display = {
         "gui": {"rotation": [25, 225, 0], "translation": [0, 0, 0], "scale": [0.72, 0.72, 0.72]},
         "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.45, 0.45, 0.45]},
-        "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [0.80, 0.80, 0.80]},
+        "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [0.90, 0.90, 0.90]},
         "thirdperson_righthand": {"rotation": [0, 90, 55], "translation": [0, 3, 1], "scale": [0.55, 0.55, 0.55]},
         "firstperson_righthand": {"rotation": [0, 90, 25], "translation": [1, 2, 1], "scale": [0.60, 0.60, 0.60]},
     }
-    for name in obj_missiles:
-        mesh = ObjBuilder(name)
-        add_missile_mesh(mesh, name)
-        mesh.write(models_item, f"apexballistics:item/{name}")
-        write_json(models_item / f"{name}.json", {
+    weapon_display = {
+        "gui": {"rotation": [45, 225, 0], "translation": [0, 2, 0], "scale": [0.85, 0.85, 0.85]},
+        "ground": {"rotation": [0, 0, 0], "translation": [0, 3, 0], "scale": [0.55, 0.55, 0.55]},
+        "fixed": {"rotation": [0, 180, 0], "translation": [0, 0, 0], "scale": [0.90, 0.90, 0.90]},
+        "thirdperson_righthand": {"rotation": [0, 90, -35], "translation": [0, 4, 2], "scale": [0.70, 0.70, 0.70]},
+        "firstperson_righthand": {"rotation": [0, 90, -25], "translation": [4, 2, 2], "scale": [0.80, 0.80, 0.80]},
+        "thirdperson_lefthand": {"rotation": [0, -90, 35], "translation": [0, 4, 2], "scale": [0.70, 0.70, 0.70]},
+        "firstperson_lefthand": {"rotation": [0, -90, 25], "translation": [4, 2, 2], "scale": [0.80, 0.80, 0.80]},
+    }
+
+    def obj_descriptor(model_path: str, texture: str, display=None) -> dict:
+        data = {
             "loader": "forge:obj",
-            "model": f"apexballistics:models/item/{name}.obj",
+            "model": model_path,
             "flip_v": True,
             "automatic_culling": False,
             "shade_quads": True,
-            "textures": {
-                "texture0": f"apexballistics:item/{name}",
-                "particle": f"apexballistics:item/{name}",
-            },
-            "display": item_display,
-        })
+            "textures": {"texture0": texture, "particle": texture},
+        }
+        if display is not None:
+            data["display"] = display
+        return data
+
+    for name in sorted(MISSILE_OBJ):
+        mesh = ObjBuilder(name)
+        add_missile_mesh(mesh, name)
+        mesh.write(models_item)
+        write_json(models_item / f"{name}.json", obj_descriptor(
+            f"apexballistics:models/item/{name}.obj",
+            f"apexballistics:item/{name}",
+            item_display,
+        ))
+
+    for name in sorted(HANDHELD_OBJ):
+        mesh = ObjBuilder(name)
+        add_handheld_mesh(mesh, name)
+        mesh.write(models_item)
+        write_json(models_item / f"{name}.json", obj_descriptor(
+            f"apexballistics:models/item/{name}.obj",
+            f"apexballistics:item/{name}",
+            weapon_display,
+        ))
 
     for name in sorted(LAUNCHER_BLOCKS):
         mesh = ObjBuilder(name)
         add_launcher_mesh(mesh, name)
-        mesh.write(models_block, f"apexballistics:block/{name}")
-        descriptor = {
-            "loader": "forge:obj",
-            "model": f"apexballistics:models/block/{name}.obj",
-            "flip_v": True,
-            "automatic_culling": False,
-            "shade_quads": True,
-            "textures": {
-                "texture0": f"apexballistics:block/{name}",
-                "particle": f"apexballistics:block/{name}",
-            },
-        }
+        mesh.write(models_block)
+        descriptor = obj_descriptor(
+            f"apexballistics:models/block/{name}.obj",
+            f"apexballistics:block/{name}",
+        )
         write_json(models_block / f"{name}.json", descriptor)
         write_json(models_item / f"{name}.json", descriptor | {"display": item_display})
 
-    radar_base = ObjBuilder("radar")
-    add_radar_base_mesh(radar_base)
-    radar_base.write(models_block, "apexballistics:block/radar")
-    radar_descriptor = {
-        "loader": "forge:obj",
-        "model": "apexballistics:models/block/radar.obj",
-        "flip_v": True,
-        "automatic_culling": False,
-        "shade_quads": True,
-        "textures": {
-            "texture0": "apexballistics:block/radar",
-            "particle": "apexballistics:block/radar",
-        },
-    }
-    write_json(models_block / "radar.json", radar_descriptor)
-    write_json(models_item / "radar.json", radar_descriptor | {"display": item_display})
+    for name in sorted(OBJ_BLOCKS - LAUNCHER_BLOCKS):
+        mesh = ObjBuilder(name)
+        if name == "radar":
+            add_radar_base_mesh(mesh)
+        else:
+            add_system_mesh(mesh, name)
+        mesh.write(models_block)
+        descriptor = obj_descriptor(
+            f"apexballistics:models/block/{name}.obj",
+            f"apexballistics:block/{name}",
+        )
+        write_json(models_block / f"{name}.json", descriptor)
+        write_json(models_item / f"{name}.json", descriptor | {"display": item_display})
 
     dish = ObjBuilder("radar_dish_component")
     add_radar_dish_mesh(dish)
-    dish.write(models_item, "apexballistics:block/radar")
-    write_json(models_item / "radar_dish_component.json", {
-        "loader": "forge:obj",
-        "model": "apexballistics:models/item/radar_dish_component.obj",
-        "flip_v": True,
-        "automatic_culling": False,
-        "shade_quads": True,
-        "textures": {
-            "texture0": "apexballistics:block/radar",
-            "particle": "apexballistics:block/radar",
-        },
-        "display": item_display,
-    })
+    dish.write(models_item)
+    write_json(models_item / "radar_dish_component.json", obj_descriptor(
+        "apexballistics:models/item/radar_dish_component.obj",
+        "apexballistics:block/radar",
+        item_display,
+    ))
 
-    write_png(tex_armor / "apex_composite_layer_1.png", 64, 32, armor_layer(1))
-    write_png(tex_armor / "apex_composite_layer_2.png", 64, 32, armor_layer(2))
-    write_png(tex_entity / "missile.png", 64, 32, missile_entity_texture())
+    write_png(tex_armor / "apex_composite_layer_1.png", 512, 256, armor_layer(1))
+    write_png(tex_armor / "apex_composite_layer_2.png", 512, 256, armor_layer(2))
+    write_png(tex_entity / "missile.png", 512, 512, item_texture("icbm"))
     for launcher in ("silo", "tube", "pad", "sam_battery", "mobile", "vls"):
         write_png(tex_gui / f"launcher_{launcher}.png", 512, 512,
                   launcher_gui_texture(launcher))
@@ -1218,6 +644,8 @@ def main() -> None:
         "ciws": "CIWS Point Defense", "rwr_module": "Radar Warning Module",
         "mirv_warhead": "MIRV Warhead", "emp_payload": "EMP Payload",
         "anti_jam_module": "Anti-Jam Module", "jammer": "Electronic Jammer",
+        "manpads": "MANPADS",
+        "manpads": "MANPADS",
     }
     for name in ITEMS:
         lang[f"item.apexballistics.{name}"] = display_overrides.get(
@@ -1225,6 +653,7 @@ def main() -> None:
     for name in ALL_BLOCKS:
         lang[f"block.apexballistics.{name}"] = display_overrides.get(
             name, name.replace("_", " ").title())
+    lang["item.apexballistics.radar_dish_component"] = "Radar Dish"
     lang["entity.apexballistics.flare"] = "Countermeasure Flare"
     lang["item.apexballistics.interceptor.desc"] = "High-altitude interceptor optimized for hostile missiles."
     lang["item.apexballistics.missile_module.desc"] = "Install at a Missile Assembly Station."
