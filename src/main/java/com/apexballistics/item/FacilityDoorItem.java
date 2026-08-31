@@ -56,7 +56,8 @@ public class FacilityDoorItem extends BlockItem {
             BlockState part = ModBlocks.DOOR_PART.get().defaultBlockState()
                     .setValue(DoorPartBlock.FACING, facing)
                     .setValue(DoorPartBlock.KIND, kind)
-                    .setValue(DoorPartBlock.CELL, i);
+                    .setValue(DoorPartBlock.CELL, i)
+                    .setValue(DoorPartBlock.OPEN, false);
             level.setBlock(cells.get(i), part, 3);
         }
         return true;

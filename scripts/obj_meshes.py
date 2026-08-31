@@ -68,6 +68,13 @@ def _cross(a, b):
     return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
 
 
+def _scale3(scale) -> tuple[float, float, float]:
+    if isinstance(scale, (int, float)):
+        value = float(scale)
+        return (value, value, value)
+    return (float(scale[0]), float(scale[1]), float(scale[2]))
+
+
 def _basis(axis: tuple[float, float, float]):
     axis = _norm(axis)
     ref = (0.0, 1.0, 0.0) if abs(axis[1]) < 0.9 else (1.0, 0.0, 0.0)
@@ -83,15 +90,16 @@ class ObjBuilder:
         self.index = 1
         self.material = ""
         self.origin = (0.0, 0.0, 0.0)
-        self.scale = 1.0
+        self.scale = (1.0, 1.0, 1.0)
         self.yaw = 0.0
         self.pitch = 0.0
 
     @contextmanager
-    def at(self, origin, scale: float = 1.0, yaw: float = 0.0, pitch: float = 0.0):
+    def at(self, origin, scale=1.0, yaw: float = 0.0, pitch: float = 0.0):
         previous = (self.origin, self.scale, self.yaw, self.pitch)
+        sx, sy, sz = _scale3(scale)
         self.origin = _add(self.origin, origin)
-        self.scale *= scale
+        self.scale = (self.scale[0] * sx, self.scale[1] * sy, self.scale[2] * sz)
         self.yaw += yaw
         self.pitch += pitch
         try:
@@ -107,7 +115,7 @@ class ObjBuilder:
         if self.yaw:
             c, s = math.cos(self.yaw), math.sin(self.yaw)
             x, z = x * c - z * s, x * s + z * c
-        x, y, z = x * self.scale, y * self.scale, z * self.scale
+        x, y, z = x * self.scale[0], y * self.scale[1], z * self.scale[2]
         return _add(self.origin, (x, y, z))
 
     def use(self, material: str) -> None:
@@ -243,9 +251,23 @@ class ObjBuilder:
         (directory / f"{self.name}.mtl").write_text(MATERIALS)
 
 
+# Unscaled airframes are ~0.3–0.8 across and ~1.2–1.9 long. World missiles must be
+# more than 3 blocks high AND more than 3 blocks thick.
+MISSILE_WORLD_SCALE = {
+    "icbm": (11.2, 2.85, 11.2),
+    "slbm": (10.4, 3.05, 10.4),
+    "srbm": (11.0, 2.70, 11.0),
+    "alcm": (4.80, 3.20, 9.40),
+    "cruise_missile": (4.50, 3.15, 9.20),
+    "sam": (8.60, 2.55, 8.60),
+    "aam": (9.80, 2.70, 9.80),
+    "interceptor": (10.4, 2.60, 10.4),
+}
+
+
 def add_missile_mesh(mesh: ObjBuilder, kind: str) -> None:
-    """World/item missiles are more than 3 blocks long and thick enough to read as airframes."""
-    with mesh.at((0.0, 0.0, 0.0), scale=2.18):
+    """World/item missiles are more than 3 blocks high and more than 3 blocks thick."""
+    with mesh.at((0.0, 0.0, 0.0), scale=MISSILE_WORLD_SCALE.get(kind, (10.0, 2.7, 10.0))):
         _add_missile_airframe(mesh, kind)
 
 
@@ -458,54 +480,62 @@ def _vls(mesh: ObjBuilder) -> None:
 
 
 def add_radar_base_mesh(mesh: ObjBuilder) -> None:
-    mesh.box(-0.18, 0.00, -0.18, 1.18, 0.18, 1.18, "dark")
-    mesh.box(0.04, 0.18, 0.04, 0.96, 0.28, 0.96, "olive")
-    mesh.box(0.10, 0.20, 0.10, 0.42, 0.58, 0.42, "olive")
-    mesh.box(0.14, 0.36, 0.14, 0.38, 0.54, 0.38, "glass")
-    mesh.cylinder((0.5, 0.16, 0.5), (0.5, 1.42, 0.5), 0.16, 28, "body", True)
-    mesh.cylinder((0.5, 1.38, 0.5), (0.5, 1.58, 0.5), 0.30, 32, "dark", True)
-    mesh.box(0.38, 1.54, 0.38, 0.62, 1.70, 0.62, "yellow")
-    mesh.cylinder((0.96, 0.18, 0.96), (0.96, 0.82, 0.96), 0.05, 12, "dark", True)
-    mesh.box(0.70, 0.18, 0.70, 1.12, 0.40, 1.12, "body")
-    mesh.bolt_ring((0.5, 0.18, 0.5), (0, 1, 0), 0.52, 12, 0.016, "yellow")
+    """Two-and-a-half-block radar pedestal with a mast the spinning dish sits on."""
+    scale = 2.20
+    shift = 0.5 * (1.0 - scale)
+    with mesh.at((shift, 0.0, shift), scale=scale):
+        mesh.box(-0.18, 0.00, -0.18, 1.18, 0.18, 1.18, "dark")
+        mesh.box(0.04, 0.18, 0.04, 0.96, 0.28, 0.96, "olive")
+        mesh.box(0.10, 0.20, 0.10, 0.42, 0.58, 0.42, "olive")
+        mesh.box(0.14, 0.36, 0.14, 0.38, 0.54, 0.38, "glass")
+        mesh.cylinder((0.5, 0.16, 0.5), (0.5, 1.42, 0.5), 0.16, 28, "body", True)
+        mesh.cylinder((0.5, 1.38, 0.5), (0.5, 1.58, 0.5), 0.30, 32, "dark", True)
+        mesh.box(0.38, 1.54, 0.38, 0.62, 1.70, 0.62, "yellow")
+        mesh.cylinder((0.96, 0.18, 0.96), (0.96, 0.82, 0.96), 0.05, 12, "dark", True)
+        mesh.box(0.70, 0.18, 0.70, 1.12, 0.40, 1.12, "body")
+        mesh.bolt_ring((0.5, 0.18, 0.5), (0, 1, 0), 0.52, 12, 0.016, "yellow")
 
 
 def add_radar_dish_mesh(mesh: ObjBuilder) -> None:
-    mesh.dish((0.0, 0.0, 0.0), 0.92, 0.62, rings=14, segments=44, material="white")
-    mesh.cylinder((0, 0, 0.12), (0, 0, 1.05), 0.032, 16, "accent", True)
-    mesh.sphere((0, 0, 1.10), 0.07, 14, 10, "accent")
+    mesh.dish((0.0, 0.0, 0.0), 1.48, 0.92, rings=16, segments=48, material="white")
+    mesh.cylinder((0, 0, 0.18), (0, 0, 1.55), 0.045, 16, "accent", True)
+    mesh.sphere((0, 0, 1.62), 0.10, 14, 10, "accent")
     for a in (0.0, TAU / 3, 2 * TAU / 3):
-        x, y = math.cos(a) * 0.72, math.sin(a) * 0.72
-        mesh.cylinder((x, y, 0.32), (0, 0, 0.98), 0.018, 8, "dark", True)
-    mesh.box(-0.14, -0.14, -0.10, 0.14, 0.14, 0.16, "dark")
-    mesh.cylinder((0, 0, -0.28), (0, 0, 0.04), 0.08, 16, "body", True)
-    mesh.box(-0.26, -0.06, -0.34, 0.26, 0.06, -0.14, "dark")
-    mesh.bolt_ring((0, 0, 0.02), (0, 0, 1), 0.18, 8, 0.014, "yellow")
+        x, y = math.cos(a) * 1.12, math.sin(a) * 1.12
+        mesh.cylinder((x, y, 0.42), (0, 0, 1.42), 0.022, 8, "dark", True)
+    mesh.box(-0.20, -0.20, -0.14, 0.20, 0.20, 0.20, "dark")
+    mesh.cylinder((0, 0, -0.40), (0, 0, 0.06), 0.11, 16, "body", True)
+    mesh.box(-0.36, -0.08, -0.48, 0.36, 0.08, -0.18, "dark")
+    mesh.bolt_ring((0, 0, 0.02), (0, 0, 1), 0.26, 10, 0.018, "yellow")
 
 
 def add_ciws_base(mesh: ObjBuilder) -> None:
-    mesh.box(-0.12, 0.00, -0.12, 1.12, 0.14, 1.12, "dark")
-    mesh.box(0.02, 0.14, 0.02, 0.98, 0.28, 0.98, "white")
-    mesh.cylinder((0.5, 0.22, 0.5), (0.5, 0.62, 0.5), 0.32, 32, "white", True)
-    mesh.bolt_ring((0.5, 0.26, 0.5), (0, 1, 0), 0.48, 12, 0.016, "yellow")
-    mesh.box(0.06, 0.14, 0.06, 0.32, 0.44, 0.32, "dark")
-    mesh.box(0.74, 0.14, 0.74, 1.04, 0.38, 1.04, "accent")
-    mesh.box(0.78, 0.38, 0.78, 0.98, 0.70, 0.98, "dark")
+    scale = 2.10
+    shift = 0.5 * (1.0 - scale)
+    with mesh.at((shift, 0.0, shift), scale=scale):
+        mesh.box(-0.12, 0.00, -0.12, 1.12, 0.14, 1.12, "dark")
+        mesh.box(0.02, 0.14, 0.02, 0.98, 0.28, 0.98, "white")
+        mesh.cylinder((0.5, 0.22, 0.5), (0.5, 0.62, 0.5), 0.32, 32, "white", True)
+        mesh.bolt_ring((0.5, 0.26, 0.5), (0, 1, 0), 0.48, 12, 0.016, "yellow")
+        mesh.box(0.06, 0.14, 0.06, 0.32, 0.44, 0.32, "dark")
+        mesh.box(0.74, 0.14, 0.74, 1.04, 0.38, 1.04, "accent")
+        mesh.box(0.78, 0.38, 0.78, 0.98, 0.70, 0.98, "dark")
 
 
 def add_ciws_turret(mesh: ObjBuilder) -> None:
     """Turret head centered at origin, barrels along +Z, for BER yaw/spin."""
-    mesh.sphere((0.0, 0.18, 0.0), 0.30, 18, 14, "white")
-    mesh.box(-0.28, -0.06, -0.30, 0.28, 0.40, 0.34, "white")
-    mesh.box(-0.42, 0.02, -0.16, -0.26, 0.30, 0.18, "dark")
-    mesh.box(0.26, 0.02, -0.16, 0.42, 0.30, 0.18, "dark")
-    mesh.cylinder((0.0, 0.12, 0.22), (0.0, 0.12, 0.52), 0.10, 16, "dark", True)
-    for i in range(6):
-        a = TAU * i / 6
-        x, y = math.cos(a) * 0.078, 0.12 + math.sin(a) * 0.078
-        mesh.cylinder((x, y, 0.36), (x, y, 1.18), 0.018, 8, "dark", True)
-    mesh.box(-0.08, 0.34, -0.10, 0.08, 0.54, 0.16, "accent")
-    mesh.box(-0.18, 0.36, -0.04, 0.18, 0.42, 0.22, "yellow")
+    with mesh.at((0.0, 0.0, 0.0), scale=1.85):
+        mesh.sphere((0.0, 0.18, 0.0), 0.30, 18, 14, "white")
+        mesh.box(-0.28, -0.06, -0.30, 0.28, 0.40, 0.34, "white")
+        mesh.box(-0.42, 0.02, -0.16, -0.26, 0.30, 0.18, "dark")
+        mesh.box(0.26, 0.02, -0.16, 0.42, 0.30, 0.18, "dark")
+        mesh.cylinder((0.0, 0.12, 0.22), (0.0, 0.12, 0.52), 0.10, 16, "dark", True)
+        for i in range(6):
+            a = TAU * i / 6
+            x, y = math.cos(a) * 0.078, 0.12 + math.sin(a) * 0.078
+            mesh.cylinder((x, y, 0.36), (x, y, 1.18), 0.018, 8, "dark", True)
+        mesh.box(-0.08, 0.34, -0.10, 0.08, 0.54, 0.16, "accent")
+        mesh.box(-0.18, 0.36, -0.04, 0.18, 0.42, 0.22, "yellow")
 
 
 def add_laser_base(mesh: ObjBuilder) -> None:
@@ -683,13 +713,13 @@ def add_handheld_mesh(mesh: ObjBuilder, name: str) -> None:
 def add_radar_item_mesh(mesh: ObjBuilder) -> None:
     """Inventory radar includes a parked dish so the icon is not a bare pedestal."""
     add_radar_base_mesh(mesh)
-    with mesh.at((0.5, 1.62, 0.5), scale=0.62, pitch=-0.40):
+    with mesh.at((0.5, 3.42, 0.5), scale=0.72, pitch=-0.40):
         add_radar_dish_mesh(mesh)
 
 
 def add_ciws_item_mesh(mesh: ObjBuilder) -> None:
     add_ciws_base(mesh)
-    with mesh.at((0.5, 0.62, 0.5)):
+    with mesh.at((0.5, 1.22, 0.5)):
         add_ciws_turret(mesh)
 
 

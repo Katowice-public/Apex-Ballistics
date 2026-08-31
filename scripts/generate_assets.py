@@ -247,11 +247,11 @@ def main() -> None:
         "firstperson_righthand": {"rotation": [0, 90, 25], "translation": [1, 2, 1], "scale": [0.60, 0.60, 0.60]},
     }
     missile_display = {
-        "gui": {"rotation": [25, 225, 0], "translation": [0, 1, 0], "scale": [0.22, 0.22, 0.22]},
-        "ground": {"rotation": [0, 0, 0], "translation": [0, 4, 0], "scale": [0.28, 0.28, 0.28]},
+        "gui": {"rotation": [25, 225, 0], "translation": [0, 1, 0], "scale": [0.14, 0.14, 0.14]},
+        "ground": {"rotation": [0, 0, 0], "translation": [0, 6, 0], "scale": [0.18, 0.18, 0.18]},
         "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [1.00, 1.00, 1.00]},
-        "thirdperson_righthand": {"rotation": [0, 90, 55], "translation": [0, 4, 1], "scale": [0.18, 0.18, 0.18]},
-        "firstperson_righthand": {"rotation": [0, 90, 25], "translation": [1, 2, 1], "scale": [0.20, 0.20, 0.20]},
+        "thirdperson_righthand": {"rotation": [0, 90, 55], "translation": [0, 4, 1], "scale": [0.10, 0.10, 0.10]},
+        "firstperson_righthand": {"rotation": [0, 90, 25], "translation": [1, 2, 1], "scale": [0.12, 0.12, 0.12]},
     }
     weapon_display = {
         "gui": {"rotation": [45, 225, 0], "translation": [0, 2, 0], "scale": [0.85, 0.85, 0.85]},

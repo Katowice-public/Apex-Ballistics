@@ -26,9 +26,9 @@ public final class ShowcaseRenderer implements BlockEntityRenderer<MissileShowca
             return;
         }
         poseStack.pushPose();
-        poseStack.translate(0.5, 1.55, 0.5);
+        poseStack.translate(0.5, 2.15, 0.5);
         poseStack.mulPose(Axis.YP.rotationDegrees(showcase.rotation() + partialTick * 1.4f));
-        poseStack.scale(1.35f, 1.35f, 1.35f);
+        poseStack.scale(0.48f, 0.48f, 0.48f);
         itemRenderer.renderStatic(stack, ItemDisplayContext.FIXED, packedLight, OverlayTexture.NO_OVERLAY,
                 poseStack, buffers, showcase.getLevel(), (int) showcase.getBlockPos().asLong());
         poseStack.popPose();

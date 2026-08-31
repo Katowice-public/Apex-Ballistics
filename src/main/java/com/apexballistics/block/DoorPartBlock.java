@@ -14,6 +14,8 @@ import net.minecraft.world.level.block.HorizontalDirectionalBlock;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
@@ -27,27 +29,28 @@ public class DoorPartBlock extends Block {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final EnumProperty<DoorKind> KIND = EnumProperty.create("kind", DoorKind.class);
     public static final IntegerProperty CELL = IntegerProperty.create("cell", 0, 8);
+    public static final BooleanProperty OPEN = BlockStateProperties.OPEN;
 
     public DoorPartBlock(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
                 .setValue(KIND, DoorKind.BLAST)
-                .setValue(CELL, 0));
+                .setValue(CELL, 0)
+                .setValue(OPEN, false));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        builder.add(FACING, KIND, CELL);
+        builder.add(FACING, KIND, CELL, OPEN);
     }
 
     public static BlockPos originOf(BlockPos part, BlockState state) {
         return state.getValue(KIND).originFrom(part, state.getValue(FACING), state.getValue(CELL));
     }
 
-    private static boolean originOpen(BlockGetter level, BlockPos origin) {
-        BlockState state = level.getBlockState(origin);
-        return state.hasProperty(FacilityDoorBlock.OPEN) && state.getValue(FacilityDoorBlock.OPEN);
+    private static boolean open(BlockState state) {
+        return state.getValue(OPEN);
     }
 
     @Override
@@ -57,22 +60,22 @@ public class DoorPartBlock extends Block {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return state.getValue(KIND).shape(state.getValue(FACING), originOpen(level, originOf(pos, state)), true);
+        return state.getValue(KIND).shape(state.getValue(FACING), open(state), true);
     }
 
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return state.getValue(KIND).shape(state.getValue(FACING), originOpen(level, originOf(pos, state)), false);
+        return state.getValue(KIND).shape(state.getValue(FACING), open(state), false);
     }
 
     @Override
     protected VoxelShape getInteractionShape(BlockState state, BlockGetter level, BlockPos pos) {
-        return state.getValue(KIND).shape(state.getValue(FACING), originOpen(level, originOf(pos, state)), true);
+        return state.getValue(KIND).shape(state.getValue(FACING), open(state), true);
     }
 
     @Override
     protected boolean isPathfindable(BlockState state, PathComputationType type) {
-        return false;
+        return open(state);
     }
 
     @Override

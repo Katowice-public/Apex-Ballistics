@@ -110,8 +110,8 @@ public class FacilityDoorBlock extends Block {
         List<BlockPos> cells = door.kind.cells(origin, facing);
         for (int i = 1; i < cells.size(); i++) {
             BlockState part = level.getBlockState(cells.get(i));
-            if (part.is(ModBlocks.DOOR_PART.get())) {
-                level.sendBlockUpdated(cells.get(i), part, part, 3);
+            if (part.is(ModBlocks.DOOR_PART.get()) && part.getValue(DoorPartBlock.OPEN) != open) {
+                level.setBlock(cells.get(i), part.setValue(DoorPartBlock.OPEN, open), 3);
             }
         }
         level.playSound(null, origin,

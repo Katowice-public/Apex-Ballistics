@@ -16,7 +16,7 @@ public final class ModEntities {
 
     public static final RegistryObject<EntityType<MissileEntity>> MISSILE = ENTITY_TYPES.register("missile",
             () -> EntityType.Builder.<MissileEntity>of(MissileEntity::new, MobCategory.MISC)
-                    .sized(0.7f, 0.7f)
+                    .sized(1.4f, 1.4f)
                     .clientTrackingRange(64)
                     .updateInterval(1)
                     .fireImmune()

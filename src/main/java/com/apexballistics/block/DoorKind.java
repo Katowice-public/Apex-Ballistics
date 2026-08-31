@@ -89,13 +89,18 @@ public enum DoorKind implements StringRepresentable {
                 return Shapes.empty();
             }
             if (hatch) {
-                return Block.box(0, 0, 14, 16, 2, 16);
+                return Shapes.or(
+                        Block.box(0, 0, 0, 16, 3, 3),
+                        Block.box(0, 0, 13, 16, 3, 16),
+                        Block.box(0, 0, 0, 3, 3, 16),
+                        Block.box(13, 0, 0, 16, 3, 16)
+                );
             }
             return switch (facing) {
-                case SOUTH -> Block.box(0, 0, 14, 2, 16, 16);
-                case WEST -> Block.box(0, 0, 0, 2, 16, 2);
-                case EAST -> Block.box(14, 0, 14, 16, 16, 16);
-                default -> Block.box(0, 0, 0, 2, 16, 2);
+                case SOUTH -> Block.box(0, 0, 14, 3, 16, 16);
+                case WEST -> Block.box(0, 0, 0, 3, 16, 3);
+                case EAST -> Block.box(13, 0, 13, 16, 16, 16);
+                default -> Block.box(0, 0, 0, 3, 16, 3);
             };
         }
         int px = Math.max(2, Math.round(thickness * 16.0f));

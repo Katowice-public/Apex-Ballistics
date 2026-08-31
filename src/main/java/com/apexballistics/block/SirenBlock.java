@@ -27,7 +27,9 @@ import org.jetbrains.annotations.Nullable;
 
 public class SirenBlock extends Block implements EntityBlock {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
-    private static final VoxelShape SHAPE = Block.box(2, 0, 2, 14, 16, 14);
+    private static final VoxelShape AIR_RAID = Block.box(1, 0, 1, 15, 28, 15);
+    private static final VoxelShape INDUSTRIAL = Block.box(1, 0, 2, 15, 24, 14);
+    private static final VoxelShape NUCLEAR = Block.box(3, 0, 3, 13, 40, 13);
     private final SirenType sirenType;
 
     public SirenBlock(Properties properties, SirenType sirenType) {
@@ -58,7 +60,11 @@ public class SirenBlock extends Block implements EntityBlock {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPE;
+        return switch (sirenType) {
+            case AIR_RAID -> AIR_RAID;
+            case INDUSTRIAL -> INDUSTRIAL;
+            case NUCLEAR -> NUCLEAR;
+        };
     }
 
     @Nullable
