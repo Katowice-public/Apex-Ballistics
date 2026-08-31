@@ -188,5 +188,7 @@
   "subtitles.apexballistics.heavy_explosion": "A strategic warhead detonates",
   "subtitles.apexballistics.light_explosion": "A missile warhead detonates",
   "subtitles.apexballistics.radar_servo": "Radar servos sweep",
-  "item.apexballistics.radar_dish_component": "Radar Dish"
+  "item.apexballistics.radar_dish_component": "Radar Dish",
+  "item.apexballistics.ciws_turret_component": "CIWS Turret",
+  "item.apexballistics.laser_head_component": "Laser Emitter"
 }

@@ -48,6 +48,10 @@ public final class ModItems {
             () -> new Item(new Item.Properties().stacksTo(32).rarity(Rarity.UNCOMMON)));
     public static final RegistryObject<Item> RADAR_DISH_COMPONENT = ITEMS.register("radar_dish_component",
             () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> CIWS_TURRET_COMPONENT = ITEMS.register("ciws_turret_component",
+            () -> new Item(new Item.Properties().stacksTo(1)));
+    public static final RegistryObject<Item> LASER_HEAD_COMPONENT = ITEMS.register("laser_head_component",
+            () -> new Item(new Item.Properties().stacksTo(1)));
 
     public static final RegistryObject<MissileItem> ICBM = missile("icbm", MissileKind.ICBM, Rarity.EPIC);
     public static final RegistryObject<MissileItem> SLBM = missile("slbm", MissileKind.SLBM, Rarity.EPIC);

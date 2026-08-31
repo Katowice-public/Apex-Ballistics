@@ -1,7 +1,11 @@
 {
-  "parent": "minecraft:block/door_top_left_open",
+  "loader": "forge:obj",
+  "model": "apexballistics:models/block/security_door_top_left_open.obj",
+  "flip_v": true,
+  "automatic_culling": false,
+  "shade_quads": true,
   "textures": {
-    "bottom": "apexballistics:block/security_door_bottom",
-    "top": "apexballistics:block/security_door_top"
+    "texture0": "apexballistics:block/security_door",
+    "particle": "apexballistics:block/security_door"
   }
 }

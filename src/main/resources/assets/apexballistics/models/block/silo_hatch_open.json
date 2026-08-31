@@ -1,6 +1,11 @@
 {
-  "parent": "minecraft:block/template_trapdoor_open",
+  "loader": "forge:obj",
+  "model": "apexballistics:models/block/silo_hatch_open.obj",
+  "flip_v": true,
+  "automatic_culling": false,
+  "shade_quads": true,
   "textures": {
-    "texture": "apexballistics:block/silo_hatch"
+    "texture0": "apexballistics:block/silo_hatch",
+    "particle": "apexballistics:block/silo_hatch"
   }
 }

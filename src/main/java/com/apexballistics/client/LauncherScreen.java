@@ -47,7 +47,7 @@ public final class LauncherScreen extends AbstractContainerScreen<LauncherMenu> 
     @Override
     protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
         ResourceLocation panel = ResourceLocation.fromNamespaceAndPath("apexballistics",
-                "textures/gui/launcher_" + menu.launcherType().name().toLowerCase() + ".png");
+                "textures/gui/launcher_" + textureKey(menu.launcherType()) + ".png");
         graphics.blit(panel, leftPos, topPos, 0.0f, 0.0f,
                 imageWidth, imageHeight, 512, 512);
     }
@@ -55,7 +55,6 @@ public final class LauncherScreen extends AbstractContainerScreen<LauncherMenu> 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
         int accent = accentColor(menu.launcherType());
-        graphics.drawString(font, title, 18, 14, accent, false);
         graphics.drawString(font, Component.translatable("screen.apexballistics.type",
                 menu.launcherType().name()), 20, 42, 0xD8E4EA, false);
         graphics.drawString(font, Component.translatable("screen.apexballistics.magazine",
@@ -75,6 +74,17 @@ public final class LauncherScreen extends AbstractContainerScreen<LauncherMenu> 
                 menu.targetX(), menu.targetZ())
                 : Component.translatable("screen.apexballistics.no_target");
         graphics.drawString(font, target, 20, 150, accent, false);
+    }
+
+    private static String textureKey(LauncherType type) {
+        return switch (type) {
+            case SILO -> "silo";
+            case TUBE -> "tube";
+            case PAD -> "pad";
+            case SAM_BATTERY -> "sam_battery";
+            case MOBILE -> "mobile";
+            case VLS -> "vls";
+        };
     }
 
     private static int accentColor(LauncherType type) {

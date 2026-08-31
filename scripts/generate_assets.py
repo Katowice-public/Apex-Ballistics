@@ -8,15 +8,25 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from obj_meshes import (
+    COMPONENT_OBJ,
     HANDHELD_OBJ,
     MISSILE_OBJ,
     OBJ_BLOCKS,
     ObjBuilder,
+    add_ciws_item_mesh,
+    add_ciws_turret,
+    add_component_mesh,
+    add_door_item_mesh,
+    add_door_mesh,
     add_handheld_mesh,
+    add_hatch_mesh,
+    add_laser_head,
+    add_laser_item_mesh,
     add_launcher_mesh,
     add_missile_mesh,
     add_radar_base_mesh,
     add_radar_dish_mesh,
+    add_radar_item_mesh,
     add_system_mesh,
 )
 from textures import armor_layer, block_texture, item_texture, launcher_gui_texture, write_png
@@ -97,7 +107,7 @@ def main() -> None:
 
     for name in ITEMS:
         write_png(tex_item / f"{name}.png", 512, 512, item_texture(name))
-        if name in MISSILE_OBJ or name in HANDHELD_OBJ:
+        if name in MISSILE_OBJ or name in HANDHELD_OBJ or name in COMPONENT_OBJ:
             continue
         parent = "minecraft:item/handheld" if name in HANDHELD else "minecraft:item/generated"
         write_json(models_item / f"{name}.json", {
@@ -128,8 +138,9 @@ def main() -> None:
             })
 
     for name in DOORS:
-        write_png(tex_block / f"{name}_bottom.png", 512, 512, block_texture("blast_steel"))
-        write_png(tex_block / f"{name}_top.png", 512, 512, block_texture("command_console"))
+        write_png(tex_block / f"{name}.png", 512, 512, block_texture(name))
+        write_png(tex_block / f"{name}_bottom.png", 512, 512, block_texture(name))
+        write_png(tex_block / f"{name}_top.png", 512, 512, block_texture(name))
         variants = {}
         closed_rotation = {"east": 0, "north": 270, "south": 90, "west": 180}
         open_left_rotation = {"east": 90, "north": 0, "south": 180, "west": 270}
@@ -153,20 +164,26 @@ def main() -> None:
             for hinge in ("left", "right"):
                 for opened in (False, True):
                     suffix = f"{half}_{hinge}" + ("_open" if opened else "")
-                    parent = f"minecraft:block/door_{suffix}"
+                    door_mesh = ObjBuilder(f"{name}_{suffix}")
+                    add_door_mesh(door_mesh, name, suffix)
+                    door_mesh.write(models_block)
                     write_json(models_block / f"{name}_{suffix}.json", {
-                        "parent": parent,
+                        "loader": "forge:obj",
+                        "model": f"apexballistics:models/block/{name}_{suffix}.obj",
+                        "flip_v": True,
+                        "automatic_culling": False,
+                        "shade_quads": True,
                         "textures": {
-                            "bottom": f"apexballistics:block/{name}_bottom",
-                            "top": f"apexballistics:block/{name}_top",
+                            "texture0": f"apexballistics:block/{name}",
+                            "particle": f"apexballistics:block/{name}",
                         },
                     })
-        write_json(models_item / f"{name}.json", {
-            "parent": f"apexballistics:block/{name}_bottom_left"
-        })
+        door_item = ObjBuilder(name)
+        add_door_item_mesh(door_item, name)
+        door_item.write(models_item)
 
     for name in TRAPDOORS:
-        write_png(tex_block / f"{name}.png", 512, 512, block_texture("blast_steel"))
+        write_png(tex_block / f"{name}.png", 512, 512, block_texture(name))
         variants = {}
         rotation = {"east": 90, "north": 0, "south": 180, "west": 270}
         for facing in ("east", "north", "south", "west"):
@@ -180,13 +197,23 @@ def main() -> None:
                     variants[key] = value
         write_json(blockstates / f"{name}.json", {"variants": variants})
         for suffix in ("bottom", "top", "open"):
+            hatch = ObjBuilder(f"{name}_{suffix}")
+            add_hatch_mesh(hatch, suffix)
+            hatch.write(models_block)
             write_json(models_block / f"{name}_{suffix}.json", {
-                "parent": f"minecraft:block/template_trapdoor_{suffix}",
-                "textures": {"texture": f"apexballistics:block/{name}"},
+                "loader": "forge:obj",
+                "model": f"apexballistics:models/block/{name}_{suffix}.obj",
+                "flip_v": True,
+                "automatic_culling": False,
+                "shade_quads": True,
+                "textures": {
+                    "texture0": f"apexballistics:block/{name}",
+                    "particle": f"apexballistics:block/{name}",
+                },
             })
-        write_json(models_item / f"{name}.json", {
-            "parent": f"apexballistics:block/{name}_bottom"
-        })
+        hatch_item = ObjBuilder(name)
+        add_hatch_mesh(hatch_item, "bottom")
+        hatch_item.write(models_item)
 
     item_display = {
         "gui": {"rotation": [25, 225, 0], "translation": [0, 0, 0], "scale": [0.72, 0.72, 0.72]},
@@ -261,7 +288,58 @@ def main() -> None:
             f"apexballistics:block/{name}",
         )
         write_json(models_block / f"{name}.json", descriptor)
-        write_json(models_item / f"{name}.json", descriptor | {"display": item_display})
+        if name == "radar":
+            radar_item = ObjBuilder("radar")
+            add_radar_item_mesh(radar_item)
+            radar_item.write(models_item)
+            write_json(models_item / "radar.json", obj_descriptor(
+                "apexballistics:models/item/radar.obj",
+                "apexballistics:block/radar",
+                item_display,
+            ))
+        elif name == "ciws":
+            ciws_item = ObjBuilder("ciws")
+            add_ciws_item_mesh(ciws_item)
+            ciws_item.write(models_item)
+            write_json(models_item / "ciws.json", obj_descriptor(
+                "apexballistics:models/item/ciws.obj",
+                "apexballistics:block/ciws",
+                item_display,
+            ))
+        elif name == "laser_defense":
+            laser_item = ObjBuilder("laser_defense")
+            add_laser_item_mesh(laser_item)
+            laser_item.write(models_item)
+            write_json(models_item / "laser_defense.json", obj_descriptor(
+                "apexballistics:models/item/laser_defense.obj",
+                "apexballistics:block/laser_defense",
+                item_display,
+            ))
+        else:
+            write_json(models_item / f"{name}.json", descriptor | {"display": item_display})
+
+    for name in sorted(COMPONENT_OBJ):
+        mesh = ObjBuilder(name)
+        add_component_mesh(mesh, name)
+        mesh.write(models_item)
+        write_json(models_item / f"{name}.json", obj_descriptor(
+            f"apexballistics:models/item/{name}.obj",
+            f"apexballistics:item/{name}",
+            item_display,
+        ))
+
+    for name in DOORS:
+        write_json(models_item / f"{name}.json", obj_descriptor(
+            f"apexballistics:models/item/{name}.obj",
+            f"apexballistics:block/{name}",
+            item_display,
+        ))
+    for name in TRAPDOORS:
+        write_json(models_item / f"{name}.json", obj_descriptor(
+            f"apexballistics:models/item/{name}.obj",
+            f"apexballistics:block/{name}",
+            item_display,
+        ))
 
     dish = ObjBuilder("radar_dish_component")
     add_radar_dish_mesh(dish)
@@ -269,6 +347,22 @@ def main() -> None:
     write_json(models_item / "radar_dish_component.json", obj_descriptor(
         "apexballistics:models/item/radar_dish_component.obj",
         "apexballistics:block/radar",
+        item_display,
+    ))
+    turret = ObjBuilder("ciws_turret_component")
+    add_ciws_turret(turret)
+    turret.write(models_item)
+    write_json(models_item / "ciws_turret_component.json", obj_descriptor(
+        "apexballistics:models/item/ciws_turret_component.obj",
+        "apexballistics:block/ciws",
+        item_display,
+    ))
+    laser_head = ObjBuilder("laser_head_component")
+    add_laser_head(laser_head)
+    laser_head.write(models_item)
+    write_json(models_item / "laser_head_component.json", obj_descriptor(
+        "apexballistics:models/item/laser_head_component.obj",
+        "apexballistics:block/laser_defense",
         item_display,
     ))
 
@@ -654,6 +748,8 @@ def main() -> None:
         lang[f"block.apexballistics.{name}"] = display_overrides.get(
             name, name.replace("_", " ").title())
     lang["item.apexballistics.radar_dish_component"] = "Radar Dish"
+    lang["item.apexballistics.ciws_turret_component"] = "CIWS Turret"
+    lang["item.apexballistics.laser_head_component"] = "Laser Emitter"
     lang["entity.apexballistics.flare"] = "Countermeasure Flare"
     lang["item.apexballistics.interceptor.desc"] = "High-altitude interceptor optimized for hostile missiles."
     lang["item.apexballistics.missile_module.desc"] = "Install at a Missile Assembly Station."

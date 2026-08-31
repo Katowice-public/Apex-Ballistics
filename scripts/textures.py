@@ -20,6 +20,7 @@ FONT = {
     "G": ["01110", "10001", "10000", "10111", "10001", "10001", "01110"],
     "H": ["10001", "10001", "11111", "10001", "10001", "10001", "10001"],
     "I": ["11111", "00100", "00100", "00100", "00100", "00100", "11111"],
+    "J": ["00111", "00001", "00001", "00001", "00001", "10001", "01110"],
     "K": ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
     "L": ["10000", "10000", "10000", "10000", "10000", "10000", "11111"],
     "M": ["10001", "11011", "10101", "10101", "10001", "10001", "10001"],
@@ -31,8 +32,11 @@ FONT = {
     "T": ["11111", "00100", "00100", "00100", "00100", "00100", "00100"],
     "U": ["10001", "10001", "10001", "10001", "10001", "10001", "01110"],
     "V": ["10001", "10001", "10001", "10001", "10001", "01010", "00100"],
+    "W": ["10001", "10001", "10001", "10101", "10101", "11011", "10001"],
     "X": ["10001", "01010", "00100", "00100", "00100", "01010", "10001"],
     "Y": ["10001", "01010", "00100", "00100", "00100", "00100", "00100"],
+    "Z": ["11111", "00001", "00010", "00100", "01000", "10000", "11111"],
+    "Q": ["01110", "10001", "10001", "10001", "10101", "10010", "01101"],
     "0": ["01110", "10001", "10011", "10101", "11001", "10001", "01110"],
     "1": ["00100", "01100", "00100", "00100", "00100", "00100", "01110"],
     "2": ["01110", "10001", "00001", "00110", "01000", "10000", "11111"],
@@ -230,25 +234,24 @@ def item_texture(name: str) -> bytes:
         stencil(buf, w, name.split("_")[0][:6], 40, 40, 6, (20, 20, 22, 255))
         return bytes(buf)
 
-    fill(buf, w, h, (0, 0, 0, 0))
-    metal_fill_region(buf, w, 64, 64, 448, 448, shade(base, -20)[:3], zlib.crc32(name.encode()) & 255)
-    rect(buf, w, 80, 80, 432, 432, (*shade(base, 25)[:3], 255))
-    rect(buf, w, 120, 120, 392, 392, (*shade(base, -10)[:3], 255))
-    stencil(buf, w, name.split("_")[0][:6], 140, 200, 6, (240, 240, 240, 255))
-    for i in range(8):
-        x = 96 + i * 40
-        rect(buf, w, x, 400, x + 16, 424, (220, 200, 80, 255))
-        rect(buf, w, x, 88, x + 16, 112, (220, 200, 80, 255))
-    if name in {"gauss_rifle", "railgun", "manpads", "plasma_blade"}:
-        rect(buf, w, 64, 220, 448, 292, (20, 22, 24, 255))
-        rect(buf, w, 80, 236, 420, 276, (*shade(base, 40)[:3], 255))
-    if name == "targeting_tablet":
-        rect(buf, w, 96, 96, 416, 360, (20, 90, 110, 255))
-        rect(buf, w, 120, 120, 392, 320, (40, 200, 170, 255))
+    metal_fill(buf, w, w, shade(base, -20)[:3], zlib.crc32(name.encode()) & 255, panel=56)
+    rect(buf, w, 24, 24, 488, 48, (*shade(base, 30)[:3], 255))
+    rect(buf, w, 24, 464, 488, 488, (*shade(base, -40)[:3], 255))
+    stencil(buf, w, name.replace("_", " ")[:10], 40, 80, 5, (240, 240, 240, 255))
+    for i in range(10):
+        x = 40 + i * 44
+        rect(buf, w, x, 430, x + 20, 452, (220, 200, 80, 255))
     if "armor" in name or name.startswith("apex_") and name.split("_")[-1] in {
         "helmet", "chestplate", "leggings", "boots"
     }:
-        rect(buf, w, 160, 80, 352, 160, (80, 230, 240, 255))
+        rect(buf, w, 160, 160, 352, 240, (80, 230, 240, 255))
+    if "payload" in name or "warhead" in name:
+        hazard_band(buf, w, 360, 400)
+    if "guidance" in name:
+        for r in range(40, 8, -6):
+            for a in range(0, 360, 8):
+                px(buf, w, int(256 + math.cos(math.radians(a)) * r),
+                   int(300 + math.sin(math.radians(a)) * r), (40, 200, 220, 255))
     return bytes(buf)
 
 
@@ -287,6 +290,9 @@ BLOCK_BASES = {
     "olive_reinforced_concrete": (78, 86, 54),
     "hazard_concrete": (90, 88, 70),
     "blast_steel": (70, 74, 80),
+    "blast_door": (62, 66, 72),
+    "security_door": (36, 70, 88),
+    "silo_hatch": (74, 72, 68),
     "bunker_glass": (70, 140, 160),
 }
 
@@ -322,8 +328,10 @@ def block_texture(name: str) -> bytes:
     else:
         metal_fill(buf, w, h, base, seed, panel=64)
         stencil(buf, w, name.replace("_", " ")[:10], 40, 40, 4, (20, 20, 22, 255))
-        if name in {"icbm_silo", "vls", "slbm_tube"}:
+        if name in {"icbm_silo", "vls", "slbm_tube", "blast_door", "silo_hatch"}:
             hazard_band(buf, w, 430, 480)
+        if name == "security_door":
+            rect(buf, w, 160, 160, 352, 320, (40, 160, 190, 180))
     return bytes(buf)
 
 
@@ -389,36 +397,50 @@ def launcher_gui_texture(launcher: str) -> bytes:
     rect(buf, w, 14, 172, 122, 200, (22, 34, 40, 255))
     rect(buf, w, 134, 172, 242, 200, (22, 34, 40, 255))
     if launcher == "silo":
-        for r in range(40, 6, -4):
-            for a in range(0, 360, 3):
+        for r in range(48, 6, -3):
+            for a in range(0, 360, 2):
                 x = int(199 + math.cos(math.radians(a)) * r)
-                y = int(100 + math.sin(math.radians(a)) * r)
-                px(buf, w, x, y, accent if r % 8 == 0 else (30, 50, 58, 255))
-        vline(buf, w, 199, 60, 140, accent)
-        hline(buf, w, 160, 238, 100, accent)
+                y = int(101 + math.sin(math.radians(a)) * r)
+                px(buf, w, x, y, accent if r % 12 == 0 else (30, 50, 58, 255))
+        vline(buf, w, 199, 54, 148, accent)
+        hline(buf, w, 152, 246, 101, accent)
+        stencil(buf, w, "RANGE", 162, 148, 2, accent)
     elif launcher == "tube":
-        for i in range(6):
-            y = 50 + i * 16
-            rect(buf, w, 164, y, 236, y + 10, accent if i % 2 == 0 else (30, 60, 90, 255))
-        stencil(buf, w, "DEPTH", 168, 148, 2, accent)
+        rect(buf, w, 158, 42, 240, 158, (8, 22, 40, 255))
+        for i in range(14):
+            y = 48 + i * 8
+            width = 12 + ((i * 17) % 50)
+            rect(buf, w, 164, y, 164 + width, y + 5, accent if i % 3 == 0 else (30, 70, 110, 255))
+        stencil(buf, w, "SONAR", 168, 148, 2, accent)
     elif launcher == "pad":
-        for x in range(164, 236, 12):
-            vline(buf, w, x, 48, 150, (30, 70, 40, 255))
-        for y in range(48, 150, 12):
-            hline(buf, w, 164, 236, y, (30, 70, 40, 255))
-        rect(buf, w, 188, 80, 196, 88, accent)
-        rect(buf, w, 210, 110, 218, 118, (240, 240, 80, 255))
+        for x in range(160, 242, 10):
+            vline(buf, w, x, 44, 152, (28, 64, 36, 255))
+        for y in range(44, 152, 10):
+            hline(buf, w, 160, 242, y, (28, 64, 36, 255))
+        for x, y in ((176, 60), (196, 78), (214, 102), (228, 128)):
+            rect(buf, w, x, y, x + 6, y + 6, accent)
+        hline(buf, w, 176, 228, 80, (240, 240, 80, 255))
+        stencil(buf, w, "ROUTE", 168, 148, 2, accent)
     elif launcher == "sam_battery":
-        for i in range(8):
-            h = 40 + (i * 11) % 70
-            rect(buf, w, 162 + i * 10, 150 - h, 170 + i * 10, 150, accent)
+        rect(buf, w, 158, 42, 240, 158, (24, 20, 8, 255))
+        for i in range(10):
+            h = 20 + (i * 13) % 90
+            col = accent if i in (2, 5, 8) else (80, 70, 30, 255)
+            rect(buf, w, 162 + i * 7, 150 - h, 168 + i * 7, 150, col)
+        stencil(buf, w, "TRACK", 168, 148, 2, accent)
     elif launcher == "mobile":
-        rect(buf, w, 168, 80, 230, 120, accent)
-        rect(buf, w, 210, 64, 236, 110, (40, 60, 30, 255))
-        for x in (174, 190, 206):
-            rect(buf, w, x, 116, x + 10, 128, (20, 20, 20, 255))
+        rect(buf, w, 164, 88, 236, 132, accent)
+        rect(buf, w, 210, 64, 242, 118, (40, 56, 28, 255))
+        rect(buf, w, 214, 72, 238, 108, (90, 160, 70, 255))
+        for x in (170, 188, 206):
+            rect(buf, w, x, 128, x + 12, 142, (18, 18, 18, 255))
+        rect(buf, w, 168, 52, 198, 84, (50, 70, 32, 255))
+        stencil(buf, w, "TEL", 176, 148, 2, accent)
     else:
-        for x, z in ((168, 55), (204, 55), (168, 100), (204, 100)):
-            rect(buf, w, x, z, x + 28, z + 36, (40, 24, 60, 255))
-            rect(buf, w, x + 6, z + 6, x + 22, z + 14, accent)
+        rect(buf, w, 158, 42, 240, 146, (22, 12, 36, 255))
+        for i, (x, z) in enumerate(((164, 50), (204, 50), (164, 96), (204, 96))):
+            rect(buf, w, x, z, x + 32, z + 40, (48, 28, 70, 255))
+            hatch = i >= 2
+            rect(buf, w, x + 6, z + (4 if hatch else 14), x + 26, z + (16 if hatch else 22), accent)
+        stencil(buf, w, "MK41", 176, 148, 2, accent)
     return bytes(buf)

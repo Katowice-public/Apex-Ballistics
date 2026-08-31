@@ -129,9 +129,12 @@ def main():
         "block/icbm_silo.obj", "block/slbm_tube.obj", "block/cruise_pad.obj",
         "block/sam_battery.obj", "block/mobile_launcher.obj", "block/vls.obj",
         "block/radar.obj", "block/ciws.obj", "block/laser_defense.obj",
+        "block/silo_hatch_bottom.obj", "block/blast_door_bottom_left.obj",
         "item/icbm.obj", "item/slbm.obj", "item/srbm.obj", "item/alcm.obj",
         "item/cruise_missile.obj", "item/sam.obj", "item/aam.obj",
         "item/interceptor.obj", "item/radar_dish_component.obj", "item/manpads.obj",
+        "item/ciws.obj", "item/warhead.obj", "item/mirv_warhead.obj",
+        "item/apex_helmet.obj", "item/ciws_turret_component.obj",
     ]
     for rel in targets:
         render(ROOT / rel)

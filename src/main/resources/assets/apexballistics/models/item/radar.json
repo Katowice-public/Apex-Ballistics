@@ -1,6 +1,6 @@
 {
   "loader": "forge:obj",
-  "model": "apexballistics:models/block/radar.obj",
+  "model": "apexballistics:models/item/radar.obj",
   "flip_v": true,
   "automatic_culling": false,
   "shade_quads": true,

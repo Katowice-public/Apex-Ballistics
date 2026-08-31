@@ -140,8 +140,10 @@ can disable terrain damage with `missileGriefing=false`.
 
 ## Visuals and audio
 
-Launchers, radar, defense hardware, and all eight missile types use Forge OBJ
-meshes (JSON files are loader stubs only — they do not contain cube geometry).
-Every shipped PNG is a 512-pixel sheet (armor is 512×256 to match vanilla's
-2:1 UV). Each launcher has its own console GUI. Launch, flight, explosion, and
-radar-servo sounds are included; see `SOUND_CREDITS.md`.
+Launchers, radar, defense hardware, doors, hatches, weapons, craft modules, and
+all eight missile types use Forge OBJ meshes (JSON files are loader stubs only —
+they do not contain cube geometry). Search radar dishes spin on a pedestal;
+CIWS turrets sweep and laser emitters scan. Every shipped PNG is a 512-pixel
+sheet (armor is 512×256 to match vanilla's 2:1 UV). Each launcher has its own
+console GUI. Launch, flight, explosion, and radar-servo sounds are included;
+see `SOUND_CREDITS.md`.

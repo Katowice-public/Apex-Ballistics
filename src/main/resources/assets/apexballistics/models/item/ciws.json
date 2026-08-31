@@ -1,6 +1,6 @@
 {
   "loader": "forge:obj",
-  "model": "apexballistics:models/block/ciws.obj",
+  "model": "apexballistics:models/item/ciws.obj",
   "flip_v": true,
   "automatic_culling": false,
   "shade_quads": true,

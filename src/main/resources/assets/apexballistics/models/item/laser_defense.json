@@ -1,6 +1,6 @@
 {
   "loader": "forge:obj",
-  "model": "apexballistics:models/block/laser_defense.obj",
+  "model": "apexballistics:models/item/laser_defense.obj",
   "flip_v": true,
   "automatic_culling": false,
   "shade_quads": true,

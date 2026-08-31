@@ -85,20 +85,25 @@ class ObjBuilder:
         self.origin = (0.0, 0.0, 0.0)
         self.scale = 1.0
         self.yaw = 0.0
+        self.pitch = 0.0
 
     @contextmanager
-    def at(self, origin, scale: float = 1.0, yaw: float = 0.0):
-        previous = (self.origin, self.scale, self.yaw)
+    def at(self, origin, scale: float = 1.0, yaw: float = 0.0, pitch: float = 0.0):
+        previous = (self.origin, self.scale, self.yaw, self.pitch)
         self.origin = _add(self.origin, origin)
         self.scale *= scale
         self.yaw += yaw
+        self.pitch += pitch
         try:
             yield
         finally:
-            self.origin, self.scale, self.yaw = previous
+            self.origin, self.scale, self.yaw, self.pitch = previous
 
     def _xf(self, p):
         x, y, z = p
+        if self.pitch:
+            c, s = math.cos(self.pitch), math.sin(self.pitch)
+            y, z = y * c - z * s, y * s + z * c
         if self.yaw:
             c, s = math.cos(self.yaw), math.sin(self.yaw)
             x, z = x * c - z * s, x * s + z * c
@@ -486,27 +491,51 @@ def add_radar_dish_mesh(mesh: ObjBuilder) -> None:
     mesh.box(-0.16, -0.04, -0.22, 0.16, 0.04, -0.10, "dark")
 
 
+def add_ciws_base(mesh: ObjBuilder) -> None:
+    mesh.box(0.08, 0.00, 0.08, 0.92, 0.10, 0.92, "dark")
+    mesh.box(0.16, 0.10, 0.16, 0.84, 0.18, 0.84, "white")
+    mesh.cylinder((0.5, 0.16, 0.5), (0.5, 0.42, 0.5), 0.20, 28, "white", True)
+    mesh.bolt_ring((0.5, 0.18, 0.5), (0, 1, 0), 0.36, 10, 0.012, "yellow")
+    mesh.box(0.18, 0.10, 0.18, 0.34, 0.28, 0.34, "dark")
+    mesh.box(0.66, 0.10, 0.66, 0.82, 0.24, 0.82, "accent")
+
+
+def add_ciws_turret(mesh: ObjBuilder) -> None:
+    """Turret head centered at origin, barrels along +Z, for BER yaw/spin."""
+    mesh.sphere((0.0, 0.10, 0.0), 0.16, 16, 12, "white")
+    mesh.box(-0.14, -0.04, -0.16, 0.14, 0.22, 0.18, "white")
+    mesh.box(-0.22, 0.00, -0.08, -0.14, 0.16, 0.10, "dark")
+    mesh.cylinder((0.0, 0.06, 0.12), (0.0, 0.06, 0.28), 0.055, 14, "dark", True)
+    for i in range(6):
+        a = TAU * i / 6
+        x, y = math.cos(a) * 0.042, 0.06 + math.sin(a) * 0.042
+        mesh.cylinder((x, y, 0.20), (x, y, 0.62), 0.011, 8, "dark", True)
+    mesh.box(-0.04, 0.18, -0.06, 0.04, 0.28, 0.08, "accent")
+
+
+def add_laser_base(mesh: ObjBuilder) -> None:
+    mesh.box(0.08, 0.00, 0.08, 0.92, 0.14, 0.92, "dark")
+    mesh.box(0.16, 0.14, 0.16, 0.84, 0.52, 0.72, "body")
+    mesh.cylinder((0.5, 0.50, 0.48), (0.5, 0.70, 0.48), 0.11, 20, "dark", True)
+    mesh.box(0.20, 0.14, 0.70, 0.40, 0.40, 0.88, "accent")
+    for x in (0.26, 0.40, 0.54, 0.68):
+        mesh.box(x, 0.52, 0.20, x + 0.06, 0.78, 0.28, "yellow")
+    mesh.bolt_ring((0.5, 0.14, 0.5), (0, 1, 0), 0.38, 8, 0.012, "yellow")
+
+
+def add_laser_head(mesh: ObjBuilder) -> None:
+    """Emitter centered at origin, beam axis +Z."""
+    mesh.cylinder((0.0, 0.0, -0.10), (0.0, 0.0, 0.28), 0.075, 20, "white", True)
+    mesh.cylinder((0.0, 0.0, 0.26), (0.0, 0.0, 0.40), 0.095, 18, "glass", True)
+    mesh.box(-0.10, -0.08, -0.16, 0.10, 0.08, -0.06, "dark")
+    mesh.box(-0.03, 0.06, -0.04, 0.03, 0.14, 0.10, "accent")
+
+
 def add_system_mesh(mesh: ObjBuilder, name: str) -> None:
     if name == "ciws":
-        mesh.box(0.12, 0.00, 0.12, 0.88, 0.18, 0.88, "dark")
-        mesh.cylinder((0.5, 0.16, 0.5), (0.5, 0.42, 0.5), 0.22, 24, "white", True)
-        mesh.box(0.32, 0.40, 0.28, 0.68, 0.72, 0.70, "white")
-        mesh.sphere((0.5, 0.88, 0.5), 0.16, 14, 10, "white")
-        mesh.box(0.18, 0.42, 0.38, 0.34, 0.70, 0.62, "dark")
-        for i in range(6):
-            a = TAU * i / 6
-            x, y = 0.50 + math.cos(a) * 0.05, 0.56 + math.sin(a) * 0.05
-            mesh.cylinder((x, y, 0.68), (x, y, 1.05), 0.012, 8, "dark", True)
-        mesh.cylinder((0.5, 0.56, 0.68), (0.5, 0.56, 0.86), 0.05, 12, "dark", True)
+        add_ciws_base(mesh)
     elif name == "laser_defense":
-        mesh.box(0.10, 0.00, 0.10, 0.90, 0.22, 0.90, "dark")
-        mesh.box(0.18, 0.22, 0.18, 0.82, 0.55, 0.70, "body")
-        mesh.cylinder((0.5, 0.52, 0.48), (0.5, 0.78, 0.48), 0.12, 20, "dark", True)
-        mesh.cylinder((0.5, 0.70, 0.48), (0.5, 0.70, 1.05), 0.08, 20, "white", True)
-        mesh.cylinder((0.5, 0.70, 1.02), (0.5, 0.70, 1.12), 0.10, 16, "glass", True)
-        mesh.box(0.22, 0.22, 0.72, 0.40, 0.48, 0.88, "accent")
-        for x in (0.28, 0.40, 0.52, 0.64):
-            mesh.box(x, 0.55, 0.22, x + 0.06, 0.82, 0.28, "yellow")
+        add_laser_base(mesh)
     elif name == "passive_radar":
         mesh.box(0.30, 0.00, 0.30, 0.70, 0.12, 0.70, "dark")
         mesh.cylinder((0.5, 0.10, 0.5), (0.5, 1.05, 0.5), 0.05, 14, "body", True)
@@ -516,16 +545,21 @@ def add_system_mesh(mesh: ObjBuilder, name: str) -> None:
             mesh.box(0.18, 0.78, z, 0.82, 0.82, z + 0.02, "yellow")
         mesh.box(0.42, 0.12, 0.42, 0.58, 0.32, 0.58, "olive")
     elif name == "command_console":
-        mesh.box(0.08, 0.00, 0.18, 0.92, 0.12, 0.92, "dark")
-        mesh.box(0.10, 0.12, 0.28, 0.90, 0.46, 0.88, "body")
-        mesh.box(0.14, 0.46, 0.52, 0.38, 0.82, 0.78, "glass")
-        mesh.box(0.40, 0.48, 0.50, 0.60, 0.88, 0.78, "glass")
-        mesh.box(0.62, 0.46, 0.52, 0.86, 0.82, 0.78, "glass")
-        mesh.box(0.16, 0.46, 0.32, 0.84, 0.50, 0.50, "dark")
-        mesh.box(0.30, 0.00, 0.00, 0.70, 0.08, 0.22, "dark")
-        for x in range(5):
-            mesh.box(0.18 + x * 0.14, 0.46, 0.34, 0.28 + x * 0.14, 0.50, 0.44, "yellow")
-        mesh.cylinder((0.18, 0.12, 0.70), (0.18, 0.70, 0.70), 0.03, 10, "accent", True)
+        mesh.box(0.04, 0.00, 0.12, 0.96, 0.10, 0.96, "dark")
+        mesh.box(0.08, 0.10, 0.22, 0.92, 0.42, 0.90, "body")
+        mesh.box(0.10, 0.42, 0.48, 0.36, 0.86, 0.86, "dark")
+        mesh.box(0.12, 0.46, 0.52, 0.34, 0.82, 0.84, "glass")
+        mesh.box(0.38, 0.42, 0.46, 0.62, 0.94, 0.88, "dark")
+        mesh.box(0.40, 0.48, 0.50, 0.60, 0.90, 0.86, "glass")
+        mesh.box(0.64, 0.42, 0.48, 0.90, 0.86, 0.86, "dark")
+        mesh.box(0.66, 0.46, 0.52, 0.88, 0.82, 0.84, "glass")
+        mesh.box(0.12, 0.40, 0.24, 0.88, 0.46, 0.48, "dark")
+        for x in range(8):
+            mesh.box(0.16 + x * 0.09, 0.42, 0.28, 0.22 + x * 0.09, 0.45, 0.36, "yellow")
+        mesh.box(0.22, 0.00, 0.00, 0.78, 0.08, 0.18, "dark")
+        mesh.cylinder((0.16, 0.10, 0.78), (0.16, 0.78, 0.78), 0.028, 10, "accent", True)
+        mesh.cylinder((0.84, 0.10, 0.78), (0.84, 0.62, 0.78), 0.024, 10, "yellow", True)
+        mesh.torus((0.78, 0.48, 0.30), (0, 1, 0), 0.05, 0.012, 12, 8, "yellow")
     elif name == "submarine_control":
         mesh.box(0.10, 0.00, 0.16, 0.90, 0.40, 0.88, "navy")
         mesh.cylinder((0.5, 0.40, 0.58), (0.5, 1.20, 0.58), 0.06, 16, "body", True)
@@ -592,44 +626,332 @@ def add_system_mesh(mesh: ObjBuilder, name: str) -> None:
 
 def add_handheld_mesh(mesh: ObjBuilder, name: str) -> None:
     if name == "manpads":
-        mesh.cylinder((0.0, 0.08, -0.55), (0.0, 0.08, 0.70), 0.07, 20, "olive", True)
-        mesh.cylinder((0.0, 0.08, 0.62), (0.0, 0.08, 0.82), 0.085, 16, "dark", True)
-        mesh.box(-0.03, -0.12, -0.05, 0.03, 0.08, 0.12, "dark")
-        mesh.box(-0.02, 0.12, 0.10, 0.02, 0.22, 0.28, "glass")
-        mesh.box(0.06, 0.00, -0.10, 0.16, 0.10, 0.18, "olive")
-        mesh.cylinder((0.0, 0.08, -0.55), (0.0, 0.08, -0.42), 0.05, 12, "accent", True)
+        mesh.cylinder((0.0, 0.08, -0.62), (0.0, 0.08, 0.58), 0.072, 24, "olive", True)
+        mesh.cylinder((0.0, 0.08, 0.50), (0.0, 0.08, 0.78), 0.092, 18, "dark", True)
+        mesh.cylinder((0.0, 0.08, 0.72), (0.0, 0.08, 0.88), 0.055, 14, "glass", True)
+        mesh.box(-0.035, -0.16, -0.08, 0.035, 0.08, 0.14, "dark")
+        mesh.box(-0.10, -0.02, 0.02, -0.035, 0.06, 0.22, "olive")
+        mesh.box(-0.028, 0.14, 0.06, 0.028, 0.26, 0.32, "dark")
+        mesh.box(-0.022, 0.20, 0.10, 0.022, 0.24, 0.28, "glass")
+        mesh.box(0.06, 0.00, -0.16, 0.18, 0.12, 0.16, "olive")
+        mesh.cylinder((0.0, 0.08, -0.62), (0.0, 0.08, -0.46), 0.048, 14, "accent", True)
+        mesh.cylinder((0.12, 0.06, 0.00), (0.12, 0.06, 0.28), 0.018, 10, "dark", True)
+        mesh.bolt_ring((0.0, 0.08, 0.50), (0, 0, 1), 0.078, 8, 0.008, "yellow")
     elif name == "gauss_rifle":
-        mesh.box(-0.05, 0.00, -0.20, 0.05, 0.10, 0.85, "dark")
-        mesh.cylinder((0.0, 0.06, 0.20), (0.0, 0.06, 0.95), 0.035, 14, "body", True)
-        for z in (0.30, 0.42, 0.54, 0.66, 0.78):
-            mesh.cylinder((0.0, 0.06, z), (0.0, 0.06, z + 0.04), 0.055, 12, "accent", False)
-        mesh.box(-0.03, -0.12, -0.05, 0.03, 0.02, 0.10, "dark")
-        mesh.box(-0.04, 0.08, -0.18, 0.04, 0.16, 0.05, "glass")
-        mesh.box(-0.06, 0.00, 0.40, 0.06, 0.14, 0.55, "yellow")
+        mesh.box(-0.055, 0.00, -0.28, 0.055, 0.12, 0.42, "dark")
+        mesh.cylinder((0.0, 0.07, 0.18), (0.0, 0.07, 1.02), 0.032, 16, "body", True)
+        for z in (0.28, 0.40, 0.52, 0.64, 0.76, 0.88):
+            mesh.cylinder((0.0, 0.07, z), (0.0, 0.07, z + 0.035), 0.052, 12, "accent", False)
+        mesh.box(-0.035, -0.16, -0.08, 0.035, 0.02, 0.12, "dark")
+        mesh.box(-0.018, -0.04, 0.18, 0.018, 0.02, 0.34, "dark")
+        mesh.box(-0.05, 0.10, -0.24, 0.05, 0.20, 0.08, "glass")
+        mesh.box(-0.07, 0.00, 0.32, 0.07, 0.16, 0.50, "yellow")
+        mesh.box(0.04, 0.02, -0.10, 0.12, 0.10, 0.16, "body")
+        mesh.cylinder((0.0, 0.07, 0.98), (0.0, 0.07, 1.08), 0.022, 10, "dark", True)
     elif name == "railgun":
-        mesh.box(-0.08, 0.00, -0.15, 0.08, 0.12, 0.70, "dark")
-        mesh.box(-0.06, 0.10, 0.10, -0.02, 0.16, 0.95, "accent")
-        mesh.box(0.02, 0.10, 0.10, 0.06, 0.16, 0.95, "accent")
-        mesh.box(-0.07, 0.04, 0.20, 0.07, 0.10, 0.55, "glass")
-        mesh.box(-0.03, -0.14, -0.02, 0.03, 0.02, 0.12, "dark")
-        mesh.box(-0.05, 0.12, -0.12, 0.05, 0.22, 0.08, "body")
+        mesh.box(-0.09, 0.00, -0.22, 0.09, 0.14, 0.48, "dark")
+        mesh.box(-0.07, 0.12, 0.04, -0.018, 0.18, 1.02, "accent")
+        mesh.box(0.018, 0.12, 0.04, 0.07, 0.18, 1.02, "accent")
+        mesh.box(-0.016, 0.08, 0.10, 0.016, 0.14, 0.90, "glass")
+        for z in (0.22, 0.40, 0.58, 0.76):
+            mesh.box(-0.08, 0.04, z, 0.08, 0.16, z + 0.04, "yellow")
+        mesh.box(-0.035, -0.18, -0.04, 0.035, 0.02, 0.14, "dark")
+        mesh.box(-0.06, 0.14, -0.18, 0.06, 0.26, 0.10, "body")
+        mesh.box(-0.04, 0.18, -0.14, 0.04, 0.24, 0.04, "glass")
+        mesh.box(0.08, 0.02, -0.06, 0.16, 0.12, 0.22, "dark")
     elif name == "plasma_blade":
-        mesh.box(-0.03, -0.05, -0.12, 0.03, 0.05, 0.22, "dark")
-        mesh.box(-0.05, -0.04, 0.18, 0.05, 0.04, 0.28, "accent")
-        mesh.box(-0.02, -0.02, 0.26, 0.02, 0.02, 0.95, "glass")
-        mesh.cylinder((0.0, 0.0, 0.22), (0.0, 0.0, 0.28), 0.04, 10, "yellow", True)
+        mesh.box(-0.035, -0.05, -0.18, 0.035, 0.05, 0.20, "dark")
+        mesh.cylinder((0.0, 0.0, 0.16), (0.0, 0.0, 0.26), 0.045, 12, "yellow", True)
+        mesh.box(-0.055, -0.045, 0.20, 0.055, 0.045, 0.30, "accent")
+        mesh.box(-0.018, -0.012, 0.28, 0.018, 0.012, 1.02, "glass")
+        mesh.box(-0.010, -0.022, 0.32, 0.010, 0.022, 0.96, "glass")
+        mesh.box(-0.04, -0.03, -0.08, 0.04, 0.03, 0.04, "body")
     elif name == "targeting_tablet":
-        mesh.box(-0.22, -0.02, -0.32, 0.22, 0.03, 0.32, "dark")
-        mesh.box(-0.18, 0.03, -0.26, 0.18, 0.04, 0.26, "glass")
-        mesh.box(-0.20, -0.03, -0.28, 0.20, -0.02, 0.28, "body")
-        mesh.cylinder((0.16, 0.00, 0.28), (0.16, 0.06, 0.28), 0.02, 8, "accent", True)
+        mesh.box(-0.24, -0.025, -0.34, 0.24, 0.035, 0.34, "dark")
+        mesh.box(-0.20, 0.032, -0.28, 0.20, 0.042, 0.26, "glass")
+        mesh.box(-0.22, -0.035, -0.30, 0.22, -0.022, 0.30, "body")
+        mesh.cylinder((0.18, 0.00, 0.30), (0.18, 0.07, 0.30), 0.018, 8, "accent", True)
+        for x in (-0.12, 0.00, 0.12):
+            mesh.box(x - 0.03, 0.036, 0.20, x + 0.03, 0.044, 0.28, "yellow")
     elif name == "jammer":
-        mesh.box(-0.16, 0.00, -0.12, 0.16, 0.28, 0.16, "olive")
-        mesh.cylinder((0.0, 0.28, 0.00), (0.0, 0.72, 0.00), 0.02, 8, "yellow", True)
-        mesh.box(-0.12, 0.08, -0.14, 0.12, 0.22, -0.10, "glass")
-        mesh.box(-0.18, 0.00, -0.08, -0.14, 0.12, 0.12, "dark")
+        mesh.box(-0.18, 0.00, -0.14, 0.18, 0.30, 0.16, "olive")
+        mesh.cylinder((0.0, 0.28, 0.00), (0.0, 0.82, 0.00), 0.018, 10, "yellow", True)
+        mesh.cylinder((0.0, 0.80, 0.00), (0.0, 0.88, 0.00), 0.04, 10, "accent", True)
+        mesh.box(-0.14, 0.08, -0.16, 0.14, 0.24, -0.11, "glass")
+        mesh.box(-0.20, 0.00, -0.10, -0.16, 0.14, 0.12, "dark")
+        mesh.box(0.16, 0.00, -0.10, 0.20, 0.14, 0.12, "dark")
+        mesh.box(-0.08, 0.30, -0.04, 0.08, 0.36, 0.04, "body")
     else:
         mesh.box(-0.1, 0.0, -0.3, 0.1, 0.1, 0.3, "body")
+
+
+def add_radar_item_mesh(mesh: ObjBuilder) -> None:
+    """Inventory radar includes a parked dish so the icon is not a bare pedestal."""
+    add_radar_base_mesh(mesh)
+    with mesh.at((0.5, 0.96, 0.5), scale=0.82, pitch=-0.40):
+        add_radar_dish_mesh(mesh)
+
+
+def add_ciws_item_mesh(mesh: ObjBuilder) -> None:
+    add_ciws_base(mesh)
+    with mesh.at((0.5, 0.42, 0.5)):
+        add_ciws_turret(mesh)
+
+
+def add_laser_item_mesh(mesh: ObjBuilder) -> None:
+    add_laser_base(mesh)
+    with mesh.at((0.5, 0.70, 0.48)):
+        add_laser_head(mesh)
+
+
+def add_hatch_mesh(mesh: ObjBuilder, suffix: str) -> None:
+    """Circular silo blast hatch. suffix is bottom, top, or open (vanilla trapdoor states)."""
+    if suffix == "top":
+        y0, y1 = 0.82, 0.98
+    else:
+        y0, y1 = 0.00, 0.16
+    mesh.box(0.00, y0, 0.00, 1.00, y0 + 0.04, 1.00, "concrete")
+    mesh.cylinder((0.5, y0 + 0.03, 0.5), (0.5, y1, 0.5), 0.46, 32, "dark", False)
+    mesh.bolt_ring((0.5, y1, 0.5), (0, 1, 0), 0.42, 12, 0.014, "yellow")
+    if suffix == "open":
+        mesh.box(0.08, 0.14, 0.78, 0.92, 0.96, 0.96, "body")
+        mesh.cylinder((0.5, 0.16, 0.86), (0.5, 0.92, 0.86), 0.36, 28, "dark", True)
+        mesh.box(0.42, 0.16, 0.70, 0.58, 0.22, 0.90, "yellow")
+        for z in (0.22, 0.78):
+            mesh.cylinder((0.12, 0.04, z), (0.12, 0.38, z), 0.03, 10, "yellow", True)
+    else:
+        mesh.cylinder((0.5, y0 + 0.04, 0.5), (0.5, y1, 0.5), 0.38, 32, "body", True)
+        mesh.box(0.46, y1, 0.18, 0.54, y1 + 0.04, 0.82, "yellow")
+        mesh.cylinder((0.18, y0, 0.18), (0.18, y1 + 0.08, 0.18), 0.035, 10, "yellow", True)
+        mesh.cylinder((0.82, y0, 0.18), (0.82, y1 + 0.08, 0.18), 0.035, 10, "yellow", True)
+
+
+def add_door_mesh(mesh: ObjBuilder, kind: str, suffix: str) -> None:
+    """Vault door occupying vanilla door space: closed on west (x=0), open left south / right north."""
+    thick = 0.20
+    security = kind == "security_door"
+    body = "body" if not security else "navy"
+    if suffix.endswith("_open"):
+        if "left" in suffix:
+            x0, x1, z0, z1 = 0.00, 1.00, 1.00 - thick, 1.00
+        else:
+            x0, x1, z0, z1 = 0.00, 1.00, 0.00, thick
+    else:
+        x0, x1, z0, z1 = 0.00, thick, 0.00, 1.00
+    mesh.box(x0, 0.00, z0, x1, 1.00, z1, body)
+    # Inner plate and bolts.
+    inset = 0.03
+    if suffix.endswith("_open"):
+        mesh.box(x0 + inset, 0.06, z0 + 0.02, x1 - inset, 0.94, z1 - 0.02, "dark")
+    else:
+        mesh.box(x0 + 0.02, 0.06, z0 + inset, x1 - 0.02, 0.94, z1 - inset, "dark")
+    if "bottom" in suffix:
+        wheel_y = 0.62
+        if suffix.endswith("_open"):
+            cx, cz = 0.50, (z0 + z1) * 0.5
+            mesh.torus((cx, wheel_y, cz), (0, 0, 1), 0.12, 0.025, 14, 8, "yellow")
+            mesh.cylinder((cx, wheel_y, z0 - 0.02), (cx, wheel_y, z1 + 0.02), 0.04, 10, "accent", True)
+        else:
+            cx, cz = (x0 + x1) * 0.5, 0.50
+            mesh.torus((cx, wheel_y, cz), (1, 0, 0), 0.12, 0.025, 14, 8, "yellow")
+            mesh.cylinder((x0 - 0.02, wheel_y, cz), (x1 + 0.02, wheel_y, cz), 0.04, 10, "accent", True)
+        mesh.box(x0 if not suffix.endswith("_open") else 0.08,
+                 0.08, z0 if suffix.endswith("_open") else 0.08,
+                 x1 if not suffix.endswith("_open") else 0.22,
+                 0.18, z1 if suffix.endswith("_open") else 0.92, "yellow")
+    else:
+        if security:
+            if suffix.endswith("_open"):
+                mesh.box(0.28, 0.35, z0 + 0.01, 0.72, 0.78, z1 - 0.01, "glass")
+            else:
+                mesh.box(x0 + 0.01, 0.35, 0.28, x1 - 0.01, 0.78, 0.72, "glass")
+        mesh.box(0.08 if suffix.endswith("_open") else x0,
+                 0.82, 0.08 if not suffix.endswith("_open") else z0,
+                 0.92 if suffix.endswith("_open") else x1,
+                 0.90, 0.92 if not suffix.endswith("_open") else z1, "accent")
+
+
+def add_door_item_mesh(mesh: ObjBuilder, kind: str) -> None:
+    security = kind == "security_door"
+    mesh.box(0.38, 0.00, 0.08, 0.62, 1.00, 0.92, "navy" if security else "body")
+    mesh.box(0.40, 0.06, 0.12, 0.60, 0.94, 0.88, "dark")
+    mesh.torus((0.50, 0.48, 0.50), (1, 0, 0), 0.12, 0.025, 14, 8, "yellow")
+    mesh.box(0.36, 0.08, 0.10, 0.40, 0.16, 0.90, "yellow")
+    if security:
+        mesh.box(0.41, 0.52, 0.28, 0.48, 0.82, 0.72, "glass")
+    mesh.bolt_ring((0.50, 0.20, 0.50), (1, 0, 0), 0.28, 8, 0.012, "yellow")
+
+
+def add_component_mesh(mesh: ObjBuilder, name: str) -> None:
+    """Unique 3D inventory meshes for remaining craft items (no 2D generated sprites)."""
+    if name == "apex_alloy":
+        mesh.box(-0.18, 0.00, -0.08, 0.18, 0.06, 0.08, "glass")
+        mesh.box(-0.16, 0.06, -0.06, 0.16, 0.10, 0.06, "body")
+        mesh.box(-0.14, 0.00, -0.07, -0.10, 0.11, 0.07, "dark")
+    elif name == "circuit_board":
+        mesh.box(-0.22, 0.00, -0.16, 0.22, 0.03, 0.16, "olive")
+        mesh.box(-0.14, 0.03, -0.08, 0.00, 0.08, 0.08, "dark")
+        mesh.box(0.04, 0.03, -0.06, 0.14, 0.07, 0.06, "accent")
+        for x in (-0.18, -0.10, 0.02, 0.10, 0.18):
+            mesh.cylinder((x, 0.00, 0.12), (x, 0.05, 0.12), 0.012, 8, "yellow", True)
+        mesh.box(-0.20, 0.03, 0.10, 0.20, 0.035, 0.12, "yellow")
+    elif name == "guidance_chip":
+        mesh.box(-0.10, 0.00, -0.10, 0.10, 0.04, 0.10, "dark")
+        mesh.box(-0.07, 0.04, -0.07, 0.07, 0.07, 0.07, "glass")
+        for i in range(6):
+            x = -0.08 + i * 0.032
+            mesh.box(x, -0.01, -0.12, x + 0.012, 0.03, -0.10, "yellow")
+            mesh.box(x, -0.01, 0.10, x + 0.012, 0.03, 0.12, "yellow")
+    elif name == "solid_fuel":
+        mesh.cylinder((0.0, 0.00, 0.0), (0.0, 0.28, 0.0), 0.08, 18, "rust", True)
+        mesh.cylinder((0.0, 0.26, 0.0), (0.0, 0.32, 0.0), 0.06, 14, "dark", True)
+        mesh.cylinder((0.0, 0.02, 0.0), (0.0, 0.26, 0.0), 0.02, 10, "dark", False)
+    elif name == "warhead":
+        mesh.cylinder((0.0, -0.10, 0.0), (0.0, 0.08, 0.0), 0.09, 20, "dark", True)
+        mesh.cone((0.0, 0.08, 0.0), (0.0, 0.32, 0.0), 0.09, 20, "accent")
+        mesh.cylinder((0.0, -0.04, 0.0), (0.0, -0.02, 0.0), 0.10, 18, "yellow", False)
+    elif name == "gauss_slug":
+        mesh.cylinder((0.0, 0.02, -0.18), (0.0, 0.02, 0.16), 0.025, 12, "body", True)
+        mesh.cone((0.0, 0.02, 0.16), (0.0, 0.02, 0.28), 0.025, 12, "glass")
+        mesh.box(-0.04, 0.00, -0.16, 0.04, 0.04, -0.10, "dark")
+    elif name == "advanced_propellant":
+        mesh.cylinder((0.0, 0.00, 0.0), (0.0, 0.26, 0.0), 0.07, 16, "olive", True)
+        mesh.cylinder((0.0, 0.24, 0.0), (0.0, 0.30, 0.0), 0.05, 12, "dark", True)
+        mesh.box(-0.04, 0.08, -0.08, 0.04, 0.18, -0.06, "yellow")
+    elif name == "energy_cell":
+        mesh.box(-0.08, 0.00, -0.08, 0.08, 0.22, 0.08, "body")
+        mesh.box(-0.06, 0.22, -0.04, 0.00, 0.28, 0.04, "accent")
+        mesh.box(0.02, 0.22, -0.04, 0.06, 0.26, 0.04, "dark")
+        mesh.box(-0.09, 0.06, -0.09, 0.09, 0.10, 0.09, "yellow")
+        mesh.box(-0.06, 0.04, -0.06, 0.06, 0.18, 0.06, "glass")
+    elif name == "capacitor":
+        mesh.cylinder((0.0, 0.00, 0.0), (0.0, 0.24, 0.0), 0.09, 18, "yellow", True)
+        mesh.box(-0.03, 0.24, -0.03, -0.01, 0.32, 0.03, "dark")
+        mesh.box(0.01, 0.24, -0.03, 0.03, 0.32, 0.03, "accent")
+        mesh.cylinder((0.0, 0.00, 0.0), (0.0, 0.04, 0.0), 0.10, 16, "dark", True)
+    elif name.startswith("guidance_"):
+        mesh.box(-0.12, 0.00, -0.10, 0.12, 0.08, 0.10, "dark")
+        mesh.box(-0.10, 0.08, -0.08, 0.10, 0.12, 0.08, "body")
+        if name.endswith("radar"):
+            with mesh.at((0.0, 0.18, 0.0), scale=0.22, pitch=-0.6):
+                add_radar_dish_mesh(mesh)
+        elif name.endswith("infrared"):
+            mesh.sphere((0.0, 0.16, 0.08), 0.06, 12, 8, "glass")
+        elif name.endswith("terrain"):
+            mesh.box(-0.10, 0.12, -0.04, 0.10, 0.16, 0.12, "yellow")
+            mesh.cylinder((0.0, 0.16, 0.04), (0.0, 0.22, 0.04), 0.02, 8, "accent", True)
+        elif name.endswith("inertial"):
+            mesh.cylinder((0.0, 0.12, 0.0), (0.0, 0.20, 0.0), 0.05, 12, "glass", True)
+        elif name.endswith("coordinate"):
+            mesh.cylinder((0.0, 0.12, 0.0), (0.0, 0.28, 0.0), 0.012, 8, "yellow", True)
+            mesh.box(-0.04, 0.26, -0.04, 0.04, 0.30, 0.04, "accent")
+        else:
+            mesh.cylinder((0.08, 0.12, 0.0), (0.08, 0.30, 0.0), 0.012, 8, "yellow", True)
+            mesh.cylinder((-0.08, 0.12, 0.0), (-0.08, 0.24, 0.0), 0.012, 8, "accent", True)
+    elif name == "emp_payload":
+        mesh.cylinder((0.0, 0.00, 0.0), (0.0, 0.16, 0.0), 0.10, 18, "dark", True)
+        mesh.torus((0.0, 0.18, 0.0), (0, 1, 0), 0.10, 0.025, 16, 10, "yellow")
+        mesh.torus((0.0, 0.24, 0.0), (0, 1, 0), 0.08, 0.02, 14, 8, "glass")
+    elif name == "incendiary_payload":
+        mesh.cylinder((0.0, 0.00, 0.0), (0.0, 0.22, 0.0), 0.09, 16, "rust", True)
+        mesh.cone((0.0, 0.22, 0.0), (0.0, 0.32, 0.0), 0.05, 12, "accent")
+        mesh.box(-0.03, 0.08, 0.08, 0.03, 0.16, 0.12, "yellow")
+    elif name == "penetrator_payload":
+        mesh.cylinder((0.0, -0.04, 0.0), (0.0, 0.10, 0.0), 0.07, 16, "dark", True)
+        mesh.cone((0.0, 0.10, 0.0), (0.0, 0.36, 0.0), 0.07, 18, "body")
+        mesh.fin(-0.02, 0.08, 0.14, 0.07, 0.01, 0.02, "dark")
+    elif name == "fragmentation_payload":
+        mesh.sphere((0.0, 0.12, 0.0), 0.12, 14, 10, "dark")
+        for a in range(8):
+            ang = TAU * a / 8
+            mesh.box(math.cos(ang) * 0.10 - 0.015, 0.04, math.sin(ang) * 0.10 - 0.015,
+                     math.cos(ang) * 0.10 + 0.015, 0.20, math.sin(ang) * 0.10 + 0.015, "yellow")
+    elif name == "decoy_warhead":
+        mesh.box(-0.12, 0.00, -0.08, 0.12, 0.10, 0.08, "olive")
+        for x in (-0.08, 0.00, 0.08):
+            mesh.cylinder((x, 0.10, 0.0), (x, 0.24, 0.0), 0.022, 8, "white", True)
+            mesh.cone((x, 0.24, 0.0), (x, 0.30, 0.0), 0.022, 8, "accent")
+    elif name == "mirv_warhead":
+        mesh.cylinder((0.0, 0.00, 0.0), (0.0, 0.10, 0.0), 0.12, 18, "dark", True)
+        for a in range(3):
+            ang = TAU * a / 3
+            x, z = math.cos(ang) * 0.06, math.sin(ang) * 0.06
+            mesh.cone((x, 0.10, z), (x, 0.28, z), 0.035, 12, "accent")
+        mesh.box(-0.02, 0.08, -0.02, 0.02, 0.14, 0.02, "yellow")
+    elif "fuse" in name:
+        mesh.cylinder((0.0, 0.00, 0.0), (0.0, 0.14, 0.0), 0.05, 14, "yellow", True)
+        if name.startswith("proximity"):
+            mesh.sphere((0.0, 0.20, 0.0), 0.05, 12, 8, "glass")
+        elif name.startswith("airburst"):
+            mesh.box(-0.04, 0.14, -0.04, 0.04, 0.22, 0.04, "accent")
+            mesh.cylinder((0.0, 0.22, 0.0), (0.0, 0.30, 0.0), 0.015, 8, "dark", True)
+        else:
+            mesh.box(-0.05, 0.14, -0.03, 0.05, 0.20, 0.03, "dark")
+            mesh.box(-0.02, 0.20, -0.02, 0.02, 0.28, 0.02, "body")
+    elif name == "two_stage_motor":
+        mesh.cylinder((0.0, -0.16, 0.0), (0.0, 0.04, 0.0), 0.08, 18, "white", False)
+        mesh.cylinder((0.0, 0.04, 0.0), (0.0, 0.22, 0.0), 0.065, 16, "body", False)
+        mesh.cylinder((0.0, -0.18, 0.0), (0.0, -0.12, 0.0), 0.09, 16, "dark", True)
+        mesh.cylinder((0.0, 0.02, 0.0), (0.0, 0.05, 0.0), 0.085, 16, "accent", False)
+    elif name == "three_stage_motor":
+        mesh.cylinder((0.0, -0.20, 0.0), (0.0, -0.02, 0.0), 0.085, 18, "white", False)
+        mesh.cylinder((0.0, -0.02, 0.0), (0.0, 0.12, 0.0), 0.07, 16, "body", False)
+        mesh.cylinder((0.0, 0.12, 0.0), (0.0, 0.24, 0.0), 0.055, 14, "white", False)
+        for y in (-0.04, 0.10):
+            mesh.cylinder((0.0, y, 0.0), (0.0, y + 0.025, 0.0), 0.09, 16, "accent", False)
+        mesh.cylinder((0.0, -0.22, 0.0), (0.0, -0.16, 0.0), 0.095, 16, "dark", True)
+    elif name.endswith("_package"):
+        mesh.box(-0.14, 0.00, -0.12, 0.14, 0.16, 0.12, "olive" if "reliability" in name else "body")
+        mesh.box(-0.12, 0.16, -0.10, 0.12, 0.18, 0.10, "yellow")
+        mesh.box(-0.03, 0.18, -0.03, 0.03, 0.22, 0.03, "dark")
+    elif name.endswith("_module") or name == "anti_jam_module":
+        mesh.box(-0.12, 0.00, -0.10, 0.12, 0.10, 0.10, "navy")
+        mesh.box(-0.10, 0.10, -0.08, 0.10, 0.14, 0.08, "dark")
+        if "thermal" in name:
+            mesh.box(-0.08, 0.14, -0.04, 0.08, 0.16, 0.08, "accent")
+        elif "rwr" in name:
+            mesh.cylinder((0.0, 0.14, 0.0), (0.0, 0.28, 0.0), 0.015, 8, "yellow", True)
+        elif "shield" in name:
+            mesh.sphere((0.0, 0.18, 0.0), 0.06, 10, 8, "glass")
+        elif "mobility" in name:
+            mesh.box(-0.10, 0.12, -0.02, 0.10, 0.18, 0.02, "yellow")
+        elif "camouflage" in name:
+            mesh.box(-0.08, 0.14, -0.06, 0.08, 0.16, 0.06, "olive")
+        elif "medical" in name:
+            mesh.box(-0.08, 0.14, -0.02, 0.08, 0.18, 0.02, "accent")
+            mesh.box(-0.02, 0.10, -0.08, 0.02, 0.22, 0.08, "accent")
+        else:
+            mesh.cylinder((-0.06, 0.14, 0.0), (-0.06, 0.26, 0.0), 0.012, 8, "yellow", True)
+            mesh.cylinder((0.06, 0.14, 0.0), (0.06, 0.26, 0.0), 0.012, 8, "accent", True)
+    elif name == "flare":
+        mesh.cylinder((0.0, 0.00, 0.0), (0.0, 0.28, 0.0), 0.035, 12, "white", True)
+        mesh.cylinder((0.0, 0.24, 0.0), (0.0, 0.32, 0.0), 0.04, 10, "accent", True)
+        mesh.box(-0.04, 0.00, -0.04, 0.04, 0.04, 0.04, "dark")
+    elif name == "apex_helmet":
+        mesh.sphere((0.0, 0.16, 0.0), 0.16, 14, 10, "glass")
+        mesh.box(-0.14, 0.00, -0.12, 0.14, 0.10, 0.12, "dark")
+        mesh.box(-0.12, 0.10, 0.08, 0.12, 0.18, 0.16, "glass")
+        mesh.box(-0.16, 0.08, -0.04, -0.12, 0.18, 0.08, "yellow")
+    elif name == "apex_chestplate":
+        mesh.box(-0.20, 0.02, -0.10, 0.20, 0.32, 0.10, "glass")
+        mesh.box(-0.16, 0.08, 0.08, 0.16, 0.24, 0.12, "accent")
+        mesh.box(-0.22, 0.18, -0.06, -0.16, 0.30, 0.06, "dark")
+        mesh.box(0.16, 0.18, -0.06, 0.22, 0.30, 0.06, "dark")
+        mesh.box(-0.06, 0.12, 0.10, 0.06, 0.22, 0.14, "yellow")
+    elif name == "apex_leggings":
+        mesh.box(-0.14, 0.18, -0.08, 0.14, 0.28, 0.08, "glass")
+        mesh.box(-0.14, 0.00, -0.07, -0.02, 0.20, 0.07, "dark")
+        mesh.box(0.02, 0.00, -0.07, 0.14, 0.20, 0.07, "dark")
+        mesh.box(-0.12, 0.08, -0.08, -0.04, 0.12, 0.08, "yellow")
+    elif name == "apex_boots":
+        mesh.box(-0.16, 0.00, -0.08, -0.02, 0.10, 0.14, "dark")
+        mesh.box(0.02, 0.00, -0.08, 0.16, 0.10, 0.14, "dark")
+        mesh.box(-0.16, 0.00, 0.10, -0.02, 0.05, 0.20, "glass")
+        mesh.box(0.02, 0.00, 0.10, 0.16, 0.05, 0.20, "glass")
+        mesh.box(-0.14, 0.10, -0.04, -0.04, 0.14, 0.08, "yellow")
+        mesh.box(0.04, 0.10, -0.04, 0.14, 0.14, 0.08, "yellow")
+    else:
+        mesh.box(-0.10, 0.00, -0.10, 0.10, 0.16, 0.10, "body")
 
 
 OBJ_BLOCKS = {
@@ -645,4 +967,21 @@ HANDHELD_OBJ = {
 
 MISSILE_OBJ = {
     "icbm", "slbm", "srbm", "alcm", "cruise_missile", "sam", "aam", "interceptor",
+}
+
+COMPONENT_OBJ = {
+    "apex_alloy", "circuit_board", "guidance_chip", "solid_fuel", "warhead",
+    "gauss_slug", "advanced_propellant", "energy_cell", "capacitor",
+    "guidance_inertial", "guidance_coordinate", "guidance_terrain", "guidance_radar",
+    "guidance_infrared", "guidance_command", "emp_payload", "incendiary_payload",
+    "penetrator_payload", "fragmentation_payload", "decoy_warhead", "mirv_warhead",
+    "proximity_fuse", "airburst_fuse", "delayed_fuse", "two_stage_motor",
+    "three_stage_motor", "precision_package", "reliability_package", "anti_jam_module",
+    "flare", "thermal_module", "rwr_module", "shield_module", "mobility_module",
+    "camouflage_module", "medical_module", "apex_helmet", "apex_chestplate",
+    "apex_leggings", "apex_boots",
+}
+
+ANIMATED_COMPONENTS = {
+    "ciws_turret_component", "laser_head_component", "radar_dish_component",
 }

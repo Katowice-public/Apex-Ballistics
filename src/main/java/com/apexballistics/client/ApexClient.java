@@ -27,5 +27,6 @@ public final class ApexClient {
         event.registerEntityRenderer(ModEntities.GAUSS_SLUG.get(), GaussSlugRenderer::new);
         event.registerEntityRenderer(ModEntities.FLARE.get(), NoopRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.RADAR.get(), RadarBlockEntityRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.DEFENSE_SYSTEM.get(), DefenseSystemRenderer::new);
     }
 }
