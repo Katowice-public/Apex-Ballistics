@@ -34,7 +34,7 @@ public class StrikeDroneRenderer extends EntityRenderer<StrikeDroneEntity> {
             poseStack.mulPose(Axis.YP.rotationDegrees(yRot));
             poseStack.mulPose(Axis.XP.rotationDegrees(-xRot));
         }
-        poseStack.scale(1.15f, 1.15f, 1.15f);
+        poseStack.scale(1.85f, 1.85f, 1.85f);
         itemRenderer.renderStatic(entity.getRenderStack(), ItemDisplayContext.FIXED, packedLight,
                 OverlayTexture.NO_OVERLAY, poseStack, buffer, entity.level(), entity.getId());
         poseStack.popPose();

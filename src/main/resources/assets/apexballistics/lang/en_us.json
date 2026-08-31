@@ -370,6 +370,7 @@
   "message.apexballistics.drone_launcher_blocked": "Need a 4 long x 2 wide x 2 high clear footprint.",
   "message.apexballistics.drone_needs_load": "Load a strike drone and a bomb first.",
   "message.apexballistics.drone_needs_target": "Load a targeting tablet with a marked grid.",
+  "message.apexballistics.drone_launched": "Strike drone away — grid %s, %s",
   "message.apexballistics.perk_invalid": "Place a missile or drone and a perk chip.",
   "message.apexballistics.perk_max": "That perk is already at rank 5.",
   "message.apexballistics.perk_applied": "Installed %s perk."

@@ -50,6 +50,7 @@ public class StrikeDroneEntity extends Projectile implements AerialThreat, IEnti
     public StrikeDroneEntity(EntityType<? extends StrikeDroneEntity> type, Level level) {
         super(type, level);
         this.noCulling = true;
+        this.noPhysics = true;
     }
 
     public void configureFromStack(ItemStack stack) {
@@ -183,9 +184,16 @@ public class StrikeDroneEntity extends Projectile implements AerialThreat, IEnti
         updateRotation();
         if (level().isClientSide) {
             level().addParticle(ParticleTypes.SMOKE, getX(), getY(), getZ(), 0, 0, 0);
-        } else if (flightAge % 30 == 1) {
-            level().playSound(null, blockPosition(), ModSounds.MISSILE_FLIGHT.get(),
-                    SoundSource.HOSTILE, 1.1f, 1.45f);
+            level().addParticle(ParticleTypes.FLAME, getX(), getY(), getZ(), 0, 0, 0);
+        } else if (level() instanceof ServerLevel server) {
+            if (flightAge % 2 == 0) {
+                server.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, getX(), getY(), getZ(),
+                        2, 0.12, 0.04, 0.12, 0.01);
+            }
+            if (flightAge % 30 == 1) {
+                server.playSound(null, blockPosition(), ModSounds.MISSILE_FLIGHT.get(),
+                        SoundSource.HOSTILE, 1.1f, 1.45f);
+            }
         }
     }
 

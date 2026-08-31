@@ -28,8 +28,10 @@ import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -51,6 +53,9 @@ public class DefenseSystemBlockEntity extends BlockEntity implements EmpSensitiv
     private int integrity = 100;
     private int empTicks;
     private int tick;
+    private int tracerFlightTicks;
+    @Nullable
+    private Entity pendingAirTarget;
 
     public DefenseSystemBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DEFENSE_SYSTEM.get(), pos, state);
@@ -69,6 +74,16 @@ public class DefenseSystemBlockEntity extends BlockEntity implements EmpSensitiv
         if (empTicks > 0) {
             empTicks--;
             return;
+        }
+        if (tracerFlightTicks > 0) {
+            tracerFlightTicks--;
+            if (tracerFlightTicks == 0 && pendingAirTarget instanceof AerialThreat threat
+                    && pendingAirTarget.isAlive()) {
+                threat.intercept();
+            }
+            if (tracerFlightTicks == 0) {
+                pendingAirTarget = null;
+            }
         }
         if (energy < 2_000 && tick % 2 == 0) {
             energy++;
@@ -121,27 +136,30 @@ public class DefenseSystemBlockEntity extends BlockEntity implements EmpSensitiv
         Vec3 to = target.position().add(0, target.getBbHeight() * 0.5, 0).subtract(origin);
         if (tracers) {
             Vec3 dir = to.normalize();
-            int burst = 8;
+            int burst = 10;
+            double speed = 4.15;
             for (int i = 0; i < burst; i++) {
                 CiwsTracerEntity tracer = new CiwsTracerEntity(ModEntities.CIWS_TRACER.get(), level);
                 tracer.setOwner(ownerPlayer);
                 tracer.setPos(origin.x, origin.y, origin.z);
-                double spread = 0.018;
+                double spread = 0.045;
                 Vec3 vel = dir.add(
                         (level.random.nextDouble() - 0.5) * spread,
                         (level.random.nextDouble() - 0.5) * spread,
-                        (level.random.nextDouble() - 0.5) * spread).normalize().scale(8.5);
+                        (level.random.nextDouble() - 0.5) * spread).normalize().scale(speed);
                 tracer.setDeltaMovement(vel);
                 level.addFreshEntity(tracer);
             }
-            int steps = 14;
+            int steps = 18;
             for (int i = 0; i <= steps; i++) {
                 Vec3 point = origin.add(to.scale(i / (double) steps));
-                server.sendParticles(CiwsTracerEntity.TRACER, point.x, point.y, point.z, 1, 0.0, 0.0, 0.0, 0.0);
+                for (ServerPlayer watcher : server.players()) {
+                    server.sendParticles(watcher, CiwsTracerEntity.TRACER, true,
+                            point.x, point.y, point.z, 2, 0.04, 0.04, 0.04, 0.0);
+                }
             }
-            if (target instanceof AerialThreat threat) {
-                threat.intercept();
-            }
+            pendingAirTarget = target;
+            tracerFlightTicks = Mth.clamp((int) Math.round(to.length() / speed), 4, 12);
         } else {
             int steps = 16;
             for (int i = 0; i <= steps; i++) {

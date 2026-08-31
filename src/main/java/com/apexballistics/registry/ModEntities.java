@@ -59,8 +59,8 @@ public final class ModEntities {
 
     public static final RegistryObject<EntityType<CiwsTracerEntity>> CIWS_TRACER = ENTITY_TYPES.register("ciws_tracer",
             () -> EntityType.Builder.<CiwsTracerEntity>of(CiwsTracerEntity::new, MobCategory.MISC)
-                    .sized(0.12f, 0.12f)
-                    .clientTrackingRange(48)
+                    .sized(0.28f, 0.28f)
+                    .clientTrackingRange(64)
                     .updateInterval(1)
                     .fireImmune()
                     .build("ciws_tracer"));

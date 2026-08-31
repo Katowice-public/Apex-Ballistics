@@ -20,6 +20,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.Container;
 import net.minecraft.world.ContainerHelper;
@@ -95,7 +97,7 @@ public class DroneLauncherBlockEntity extends BlockEntity implements Container, 
                 ? getBlockState().getValue(DroneLauncherBlock.FACING)
                 : Direction.NORTH;
         Vec3 spawn = Vec3.atCenterOf(worldPosition)
-                .add(facing.getStepX() * 2.4, 1.35, facing.getStepZ() * 2.4);
+                .add(facing.getStepX() * 3.65, 2.35, facing.getStepZ() * 3.65);
         StrikeDroneEntity drone = new StrikeDroneEntity(ModEntities.STRIKE_DRONE.get(), level);
         drone.setPos(spawn.x, spawn.y, spawn.z);
         drone.configureFromStack(droneStack);
@@ -114,6 +116,18 @@ public class DroneLauncherBlockEntity extends BlockEntity implements Container, 
         drone.setDeltaMovement(impulse);
         level.addFreshEntity(drone);
         level.playSound(null, worldPosition, ModSounds.CRUISE_LAUNCH.get(), SoundSource.BLOCKS, 2.6f, 1.15f);
+        Component launched = Component.translatable(
+                "message.apexballistics.drone_launched", target.getX(), target.getZ());
+        if (player != null) {
+            player.displayClientMessage(launched, false);
+        } else if (level instanceof ServerLevel server) {
+            Vec3 origin = Vec3.atCenterOf(worldPosition);
+            for (ServerPlayer nearby : server.players()) {
+                if (nearby.distanceToSqr(origin) < 96.0 * 96.0) {
+                    nearby.displayClientMessage(launched, false);
+                }
+            }
+        }
         droneStack.shrink(1);
         bombStack.shrink(1);
         if (droneStack.isEmpty()) {

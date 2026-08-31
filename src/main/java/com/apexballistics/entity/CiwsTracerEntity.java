@@ -22,7 +22,7 @@ import org.joml.Vector3f;
 
 public class CiwsTracerEntity extends Projectile implements IEntityAdditionalSpawnData {
     public static final DustParticleOptions TRACER = new DustParticleOptions(
-            new Vector3f(1.00f, 0.42f, 0.08f), 1.15f);
+            new Vector3f(1.00f, 0.38f, 0.05f), 2.0f);
 
     private int life;
 
@@ -40,7 +40,7 @@ public class CiwsTracerEntity extends Projectile implements IEntityAdditionalSpa
     public void tick() {
         super.tick();
         life++;
-        if (life > 18) {
+        if (life > 24) {
             discard();
             return;
         }
@@ -53,8 +53,16 @@ public class CiwsTracerEntity extends Projectile implements IEntityAdditionalSpa
         setPos(getX() + movement.x, getY() + movement.y, getZ() + movement.z);
         updateRotation();
         if (level().isClientSide) {
-            level().addParticle(TRACER, getX(), getY(), getZ(), 0, 0, 0);
-            level().addParticle(ParticleTypes.SMOKE, getX(), getY(), getZ(), 0, 0, 0);
+            Vec3 pos = position();
+            for (int i = 0; i < 3; i++) {
+                double t = i / 3.0;
+                level().addParticle(TRACER,
+                        pos.x - movement.x * t,
+                        pos.y - movement.y * t,
+                        pos.z - movement.z * t,
+                        0, 0, 0);
+            }
+            level().addParticle(ParticleTypes.FLAME, pos.x, pos.y, pos.z, 0, 0, 0);
         }
     }
 
