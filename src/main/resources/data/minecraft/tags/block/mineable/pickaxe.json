@@ -25,6 +25,8 @@
     "apexballistics:nuclear_warning_siren",
     "apexballistics:cable",
     "apexballistics:missile_showcase",
+    "apexballistics:drone_launcher",
+    "apexballistics:perk_workbench",
     "apexballistics:reinforced_concrete",
     "apexballistics:white_reinforced_concrete",
     "apexballistics:black_reinforced_concrete",
@@ -148,6 +150,7 @@
     "apexballistics:vehicle_door",
     "apexballistics:silo_blast_leaf",
     "apexballistics:hangar_shutter",
-    "apexballistics:door_part"
+    "apexballistics:door_part",
+    "apexballistics:vehicle_part"
   ]
 }

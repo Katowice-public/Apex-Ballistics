@@ -1,0 +1,30 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "A": {
+      "item": "apexballistics:apex_alloy"
+    },
+    "F": {
+      "item": "minecraft:phantom_membrane"
+    },
+    "C": {
+      "item": "apexballistics:circuit_board"
+    },
+    "E": {
+      "item": "apexballistics:guidance_chip"
+    },
+    "T": {
+      "item": "minecraft:tnt"
+    }
+  },
+  "pattern": [
+    " A ",
+    "FCE",
+    " T "
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:strike_drone"
+  }
+}

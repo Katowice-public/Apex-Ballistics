@@ -1,7 +1,9 @@
 package com.apexballistics.registry;
 
 import com.apexballistics.ApexBallistics;
+import com.apexballistics.menu.DroneLauncherMenu;
 import com.apexballistics.menu.LauncherMenu;
+import com.apexballistics.menu.PerkWorkbenchMenu;
 import com.apexballistics.menu.ShowcaseMenu;
 import com.apexballistics.menu.SirenMenu;
 import net.minecraft.core.registries.Registries;
@@ -20,6 +22,10 @@ public final class ModMenus {
             MENUS.register("siren", () -> IForgeMenuType.create(SirenMenu::new));
     public static final RegistryObject<MenuType<ShowcaseMenu>> SHOWCASE =
             MENUS.register("showcase", () -> IForgeMenuType.create(ShowcaseMenu::new));
+    public static final RegistryObject<MenuType<DroneLauncherMenu>> DRONE_LAUNCHER =
+            MENUS.register("drone_launcher", () -> IForgeMenuType.create(DroneLauncherMenu::new));
+    public static final RegistryObject<MenuType<PerkWorkbenchMenu>> PERK_WORKBENCH =
+            MENUS.register("perk_workbench", () -> IForgeMenuType.create(PerkWorkbenchMenu::new));
 
     private ModMenus() {
     }

@@ -309,6 +309,8 @@ BLOCK_BASES = {
     "nuclear_warning_siren": (196, 156, 42),
     "cable": (48, 92, 58),
     "missile_showcase": (42, 58, 78),
+    "drone_launcher": (64, 92, 48),
+    "perk_workbench": (48, 78, 96),
 }
 
 

@@ -20,6 +20,8 @@ public final class ApexClient {
         MenuScreens.register(ModMenus.LAUNCHER.get(), LauncherScreen::new);
         MenuScreens.register(ModMenus.SIREN.get(), SirenScreen::new);
         MenuScreens.register(ModMenus.SHOWCASE.get(), ShowcaseScreen::new);
+        MenuScreens.register(ModMenus.DRONE_LAUNCHER.get(), DroneLauncherScreen::new);
+        MenuScreens.register(ModMenus.PERK_WORKBENCH.get(), PerkWorkbenchScreen::new);
         ApexBallistics.LOGGER.info("Apex Ballistics client systems online.");
     }
 
@@ -28,10 +30,14 @@ public final class ApexClient {
         event.registerEntityRenderer(ModEntities.MISSILE.get(), MissileRenderer::new);
         event.registerEntityRenderer(ModEntities.GAUSS_SLUG.get(), GaussSlugRenderer::new);
         event.registerEntityRenderer(ModEntities.FLARE.get(), NoopRenderer::new);
+        event.registerEntityRenderer(ModEntities.STRIKE_DRONE.get(), StrikeDroneRenderer::new);
+        event.registerEntityRenderer(ModEntities.BOMB.get(), BombRenderer::new);
+        event.registerEntityRenderer(ModEntities.CIWS_TRACER.get(), CiwsTracerRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.RADAR.get(), RadarBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.DEFENSE_SYSTEM.get(), DefenseSystemRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.LAUNCHER.get(), LauncherBlockEntityRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SIREN.get(), SirenRenderer::new);
         event.registerBlockEntityRenderer(ModBlockEntities.SHOWCASE.get(), ShowcaseRenderer::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.DRONE_LAUNCHER.get(), DroneLauncherRenderer::new);
     }
 }

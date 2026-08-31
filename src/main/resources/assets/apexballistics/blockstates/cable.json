@@ -1,19 +1,44 @@
 {
-  "variants": {
-    "facing=north": {
-      "model": "apexballistics:block/cable"
+  "multipart": [
+    {
+      "apply": {
+        "model": "apexballistics:block/cable_core"
+      }
     },
-    "facing=south": {
-      "model": "apexballistics:block/cable",
-      "y": 180
+    {
+      "when": {
+        "north": "true"
+      },
+      "apply": {
+        "model": "apexballistics:block/cable_side"
+      }
     },
-    "facing=west": {
-      "model": "apexballistics:block/cable",
-      "y": 270
+    {
+      "when": {
+        "east": "true"
+      },
+      "apply": {
+        "model": "apexballistics:block/cable_side",
+        "y": 90
+      }
     },
-    "facing=east": {
-      "model": "apexballistics:block/cable",
-      "y": 90
+    {
+      "when": {
+        "south": "true"
+      },
+      "apply": {
+        "model": "apexballistics:block/cable_side",
+        "y": 180
+      }
+    },
+    {
+      "when": {
+        "west": "true"
+      },
+      "apply": {
+        "model": "apexballistics:block/cable_side",
+        "y": 270
+      }
     }
-  }
+  ]
 }

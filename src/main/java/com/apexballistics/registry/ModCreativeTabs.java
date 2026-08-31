@@ -83,6 +83,17 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.NUCLEAR_WARNING_SIREN.get());
                         output.accept(ModItems.CABLE.get());
                         output.accept(ModItems.MISSILE_SHOWCASE.get());
+                        output.accept(ModItems.DRONE_LAUNCHER.get());
+                        output.accept(ModItems.PERK_WORKBENCH.get());
+                        output.accept(ModItems.STRIKE_DRONE.get());
+                        output.accept(ModItems.HE_BOMB.get());
+                        output.accept(ModItems.CLUSTER_BOMB.get());
+                        output.accept(ModItems.BUNKER_BOMB.get());
+                        output.accept(ModItems.INCENDIARY_BOMB.get());
+                        output.accept(ModItems.RANGE_PERK.get());
+                        output.accept(ModItems.DAMAGE_PERK.get());
+                        output.accept(ModItems.ACCURACY_PERK.get());
+                        output.accept(ModItems.SPEED_PERK.get());
                         output.accept(ModItems.TARGETING_TABLET.get());
                         output.accept(ModItems.MANPADS.get());
 

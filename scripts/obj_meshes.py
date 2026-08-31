@@ -267,6 +267,9 @@ MISSILE_WORLD_SCALE = {
 
 def add_missile_mesh(mesh: ObjBuilder, kind: str) -> None:
     """World/item missiles are more than 3 blocks high and more than 3 blocks thick."""
+    if kind == "strike_drone":
+        add_strike_drone_mesh(mesh)
+        return
     with mesh.at((0.0, 0.0, 0.0), scale=MISSILE_WORLD_SCALE.get(kind, (10.0, 2.7, 10.0))):
         _add_missile_airframe(mesh, kind)
 
@@ -975,6 +978,10 @@ def add_component_mesh(mesh: ObjBuilder, name: str) -> None:
         mesh.box(0.02, 0.00, 0.10, 0.16, 0.05, 0.20, "glass")
         mesh.box(-0.14, 0.10, -0.04, -0.04, 0.14, 0.08, "yellow")
         mesh.box(0.04, 0.10, -0.04, 0.14, 0.14, 0.08, "yellow")
+    elif name.endswith("_bomb"):
+        add_bomb_mesh(mesh, name)
+    elif name.endswith("_perk"):
+        add_perk_chip_mesh(mesh, name)
     else:
         mesh.box(-0.10, 0.00, -0.10, 0.10, 0.16, 0.10, "body")
 
@@ -1054,6 +1061,115 @@ def add_cable_item_mesh(mesh: ObjBuilder) -> None:
     mesh.torus((0.0, 0.15, 0.0), (0, 1, 0), 0.12, 0.035, 18, 10, "olive")
     mesh.torus((0.0, 0.15, 0.0), (0, 1, 0), 0.08, 0.028, 16, 10, "yellow")
     mesh.cylinder((0.10, 0.15, 0.00), (0.22, 0.04, 0.10), 0.018, 8, "accent", True)
+
+
+def add_drone_launcher_mesh(mesh: ObjBuilder) -> None:
+    """4-long × 2-high TEL car. Origin is rear-left; nose/ramp toward -Z (north)."""
+    # Chassis / frame
+    mesh.box(0.06, 0.18, -3.92, 1.94, 0.46, -0.08, "olive")
+    mesh.box(0.10, 0.46, -3.88, 1.90, 0.58, -1.18, "dark")
+    mesh.box(0.02, 0.00, -3.96, 1.98, 0.10, -0.04, "dark")
+    # Cab at the rear (z near 0)
+    mesh.box(0.12, 0.46, -1.18, 1.88, 1.62, -0.06, "olive")
+    mesh.box(0.22, 0.78, -0.22, 1.78, 1.48, 0.04, "glass")
+    mesh.box(0.18, 0.72, -1.12, 1.82, 1.42, -0.92, "glass")
+    mesh.box(0.28, 0.50, -1.10, 1.72, 0.78, -0.18, "dark")
+    mesh.box(1.78, 0.86, -0.62, 1.98, 1.02, -0.42, "yellow")
+    mesh.box(0.02, 0.86, -0.62, 0.22, 1.02, -0.42, "yellow")
+    mesh.box(0.70, 1.52, -0.70, 1.30, 1.78, -0.18, "dark")
+    mesh.box(0.78, 1.62, -1.05, 1.22, 1.92, -0.55, "navy")
+    # 45-degree launch rail from bed toward the nose
+    for i in range(10):
+        t0, t1 = i / 10.0, (i + 1) / 10.0
+        z0 = -1.20 + t0 * (-3.70 + 1.20)
+        z1 = -1.20 + t1 * (-3.70 + 1.20)
+        y0 = 0.58 + t0 * 1.35
+        y1 = 0.58 + t1 * 1.35
+        mesh.box(0.42, y0, min(z0, z1), 1.58, y1 + 0.10, max(z0, z1), "body")
+        mesh.box(0.38, y0 + 0.02, min(z0, z1), 0.48, y1 + 0.16, max(z0, z1), "yellow")
+        mesh.box(1.52, y0 + 0.02, min(z0, z1), 1.62, y1 + 0.16, max(z0, z1), "yellow")
+    mesh.box(0.48, 1.78, -3.82, 1.52, 1.98, -3.42, "accent")
+    mesh.cylinder((1.00, 0.62, -1.28), (1.00, 1.88, -3.55), 0.05, 12, "dark", True)
+    # Wheels along both sides
+    for z in (-0.42, -1.55, -2.55, -3.52):
+        for x, s in ((0.08, 1), (1.92, -1)):
+            mesh.torus((x, 0.28, z), (1, 0, 0), 0.24, 0.08, 16, 10, "tire")
+            mesh.cylinder((x - 0.08 * s, 0.28, z), (x + 0.08 * s, 0.28, z), 0.10, 12, "dark", True)
+    # Lights, grill, exhaust, stowage
+    mesh.box(0.22, 0.52, -0.08, 0.48, 0.70, 0.06, "accent")
+    mesh.box(1.52, 0.52, -0.08, 1.78, 0.70, 0.06, "accent")
+    mesh.box(0.30, 0.22, -3.98, 0.70, 0.38, -3.88, "yellow")
+    mesh.box(1.30, 0.22, -3.98, 1.70, 0.38, -3.88, "yellow")
+    mesh.cylinder((0.22, 0.48, -3.40), (0.22, 0.48, -3.85), 0.06, 10, "dark", True)
+    mesh.box(0.16, 0.58, -2.40, 0.38, 1.10, -1.70, "dark")
+    mesh.box(1.62, 0.58, -2.40, 1.84, 1.10, -1.70, "dark")
+    mesh.bolt_ring((1.00, 0.20, -2.00), (0, 1, 0), 0.72, 10, 0.018, "yellow")
+
+
+def add_perk_workbench_mesh(mesh: ObjBuilder) -> None:
+    mesh.box(0.02, 0.00, 0.02, 0.98, 0.14, 0.98, "dark")
+    mesh.box(0.08, 0.14, 0.08, 0.92, 0.92, 0.92, "olive")
+    mesh.box(0.04, 0.92, 0.04, 0.96, 1.02, 0.96, "body")
+    mesh.box(0.12, 1.02, 0.18, 0.88, 1.38, 0.42, "navy")
+    mesh.box(0.18, 1.10, 0.22, 0.82, 1.32, 0.28, "glass")
+    mesh.box(0.14, 1.02, 0.50, 0.46, 1.22, 0.86, "dark")
+    mesh.box(0.54, 1.02, 0.50, 0.86, 1.18, 0.86, "yellow")
+    mesh.cylinder((0.22, 1.02, 0.22), (0.22, 1.48, 0.22), 0.03, 8, "accent", True)
+    mesh.box(0.20, 0.30, 0.00, 0.80, 0.82, 0.10, "dark")
+    mesh.box(0.28, 0.40, 0.10, 0.72, 0.70, 0.16, "glass")
+    mesh.bolt_ring((0.5, 0.14, 0.5), (0, 1, 0), 0.42, 8, 0.014, "yellow")
+
+
+def add_strike_drone_mesh(mesh: ObjBuilder) -> None:
+    """Predator-style UAV, fuselage along +Z."""
+    mesh.cylinder((0.0, 0.04, -0.55), (0.0, 0.04, 0.62), 0.07, 18, "olive", True)
+    mesh.cone((0.0, 0.04, 0.62), (0.0, 0.04, 0.92), 0.07, 16, "dark")
+    mesh.cylinder((0.0, 0.04, -0.55), (0.0, 0.04, -0.78), 0.045, 12, "dark", True)
+    mesh.box(-0.72, 0.02, -0.12, 0.72, 0.06, 0.22, "olive")
+    mesh.box(-0.70, 0.03, 0.04, -0.18, 0.055, 0.18, "dark")
+    mesh.box(0.18, 0.03, 0.04, 0.70, 0.055, 0.18, "dark")
+    mesh.box(-0.22, 0.02, -0.72, -0.02, 0.28, -0.58, "olive")
+    mesh.box(0.02, 0.02, -0.72, 0.22, 0.28, -0.58, "olive")
+    mesh.box(-0.04, 0.10, -0.18, 0.04, 0.22, 0.10, "dark")
+    mesh.cylinder((0.0, 0.00, 0.28), (0.0, -0.10, 0.28), 0.03, 10, "glass", True)
+    mesh.box(-0.05, -0.02, 0.05, 0.05, 0.04, 0.28, "dark")
+    mesh.box(-0.03, -0.08, 0.12, 0.03, 0.00, 0.22, "accent")
+    mesh.cylinder((0.0, 0.04, -0.20), (0.0, 0.16, -0.20), 0.012, 8, "yellow", True)
+
+
+def add_bomb_mesh(mesh: ObjBuilder, name: str) -> None:
+    color = {
+        "he_bomb": "olive",
+        "cluster_bomb": "yellow",
+        "bunker_bomb": "dark",
+        "incendiary_bomb": "accent",
+    }.get(name, "olive")
+    mesh.cylinder((0.0, -0.16, 0.0), (0.0, 0.18, 0.0), 0.07, 16, color, True)
+    mesh.cone((0.0, 0.18, 0.0), (0.0, 0.32, 0.0), 0.07, 14, "dark")
+    mesh.box(-0.01, -0.18, -0.08, 0.01, 0.06, 0.08, "dark")
+    mesh.box(-0.08, -0.18, -0.01, 0.08, 0.06, 0.01, "dark")
+    if name == "cluster_bomb":
+        for x in (-0.04, 0.04):
+            mesh.cylinder((x, -0.10, 0.04), (x, 0.10, 0.04), 0.02, 8, "yellow", True)
+    if name == "bunker_bomb":
+        mesh.cone((0.0, -0.16, 0.0), (0.0, -0.28, 0.0), 0.05, 12, "body")
+    if name == "incendiary_bomb":
+        mesh.cylinder((0.0, 0.06, 0.0), (0.0, 0.10, 0.0), 0.075, 12, "yellow", False)
+
+
+def add_perk_chip_mesh(mesh: ObjBuilder, name: str) -> None:
+    accent = {
+        "range_perk": "glass",
+        "damage_perk": "accent",
+        "accuracy_perk": "yellow",
+        "speed_perk": "navy",
+    }.get(name, "body")
+    mesh.box(-0.10, 0.00, -0.10, 0.10, 0.03, 0.10, "dark")
+    mesh.box(-0.07, 0.03, -0.07, 0.07, 0.07, 0.07, accent)
+    for i in range(5):
+        x = -0.08 + i * 0.035
+        mesh.box(x, -0.01, -0.12, x + 0.012, 0.025, -0.10, "yellow")
+        mesh.box(x, -0.01, 0.10, x + 0.012, 0.025, 0.12, "body")
 
 
 def add_showcase_mesh(mesh: ObjBuilder) -> None:
@@ -1177,7 +1293,7 @@ OBJ_BLOCKS = {
     "submarine_control", "missile_rack", "loading_crane", "propellant_refinery",
     "maintenance_station", "capacitor_charger", "missile_assembly",
     "air_raid_siren", "industrial_siren", "nuclear_warning_siren",
-    "cable", "missile_showcase",
+    "missile_showcase", "drone_launcher", "perk_workbench",
 }
 
 HANDHELD_OBJ = {
@@ -1186,6 +1302,7 @@ HANDHELD_OBJ = {
 
 MISSILE_OBJ = {
     "icbm", "slbm", "srbm", "alcm", "cruise_missile", "sam", "aam", "interceptor",
+    "strike_drone",
 }
 
 COMPONENT_OBJ = {
@@ -1199,6 +1316,8 @@ COMPONENT_OBJ = {
     "flare", "thermal_module", "rwr_module", "shield_module", "mobility_module",
     "camouflage_module", "medical_module", "apex_helmet", "apex_chestplate",
     "apex_leggings", "apex_boots",
+    "he_bomb", "cluster_bomb", "bunker_bomb", "incendiary_bomb",
+    "range_perk", "damage_perk", "accuracy_perk", "speed_perk",
 }
 
 ANIMATED_COMPONENTS = {

@@ -4,16 +4,19 @@ import com.apexballistics.ApexBallistics;
 import com.apexballistics.block.CableBlock;
 import com.apexballistics.block.DoorKind;
 import com.apexballistics.block.DoorPartBlock;
+import com.apexballistics.block.DroneLauncherBlock;
 import com.apexballistics.block.FacilityDoorBlock;
 import com.apexballistics.block.LauncherBlock;
 import com.apexballistics.block.LauncherType;
 import com.apexballistics.block.MissileAssemblyBlock;
 import com.apexballistics.block.MissileShowcaseBlock;
+import com.apexballistics.block.PerkWorkbenchBlock;
 import com.apexballistics.block.RadarBlock;
 import com.apexballistics.block.SirenBlock;
 import com.apexballistics.block.SirenType;
 import com.apexballistics.block.SystemBlock;
 import com.apexballistics.block.SystemType;
+import com.apexballistics.block.VehiclePartBlock;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -106,6 +109,12 @@ public final class ModBlocks {
             () -> new CableBlock(hardware().mapColor(MapColor.COLOR_GREEN).strength(2.0f, 80.0f)));
     public static final RegistryObject<MissileShowcaseBlock> MISSILE_SHOWCASE = BLOCKS.register("missile_showcase",
             () -> new MissileShowcaseBlock(hardware().mapColor(MapColor.COLOR_BLUE)));
+    public static final RegistryObject<DroneLauncherBlock> DRONE_LAUNCHER = BLOCKS.register("drone_launcher",
+            () -> new DroneLauncherBlock(hardware().mapColor(MapColor.COLOR_GREEN)));
+    public static final RegistryObject<PerkWorkbenchBlock> PERK_WORKBENCH = BLOCKS.register("perk_workbench",
+            () -> new PerkWorkbenchBlock(hardware().mapColor(MapColor.COLOR_CYAN)));
+    public static final RegistryObject<VehiclePartBlock> VEHICLE_PART = BLOCKS.register("vehicle_part",
+            () -> new VehiclePartBlock(doorMetal().mapColor(MapColor.COLOR_GREEN)));
 
     public static final RegistryObject<Block> REINFORCED_CONCRETE = reinforcedBlock("reinforced_concrete", MapColor.COLOR_GRAY);
     public static final RegistryObject<Block> WHITE_REINFORCED_CONCRETE = reinforcedBlock("white_reinforced_concrete", MapColor.SNOW);

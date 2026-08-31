@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "T": {
+      "item": "minecraft:tnt"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "pattern": [
+    " T ",
+    "TIT",
+    " T "
+  ],
+  "result": {
+    "count": 2,
+    "id": "apexballistics:he_bomb"
+  }
+}

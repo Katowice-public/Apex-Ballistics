@@ -53,7 +53,8 @@ public class MissileItem extends Item {
                 }
             }
             missile.setPos(player.getX(), player.getEyeY() - 0.1, player.getZ());
-            missile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0f, kind.launchSpeed(), 0.4f);
+            missile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0f,
+                    kind.launchSpeed() * missile.speedMultiplier(), 0.4f);
             missile.acquireAirTarget(player);
             level.addFreshEntity(missile);
             level.playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -82,6 +83,7 @@ public class MissileItem extends Item {
                 .withStyle(ChatFormatting.YELLOW));
         tooltip.add(Component.translatable("tooltip.apexballistics.reliability",
                 Math.round(spec.reliability() * 100)).withStyle(ChatFormatting.GREEN));
+        WeaponPerks.fromStack(stack).appendTooltip(tooltip);
         if (kind.handheld()) {
             tooltip.add(Component.translatable("tooltip.apexballistics.handheld").withStyle(ChatFormatting.DARK_AQUA));
         } else {

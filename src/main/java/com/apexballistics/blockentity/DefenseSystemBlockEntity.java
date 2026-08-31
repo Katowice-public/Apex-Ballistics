@@ -4,6 +4,8 @@ import com.apexballistics.block.SystemBlock;
 import com.apexballistics.block.SystemType;
 import com.apexballistics.defense.EmpSensitive;
 import com.apexballistics.defense.FactionRelations;
+import com.apexballistics.entity.AerialThreat;
+import com.apexballistics.entity.CiwsTracerEntity;
 import com.apexballistics.entity.MissileEntity;
 import com.apexballistics.item.ApexArmorItem;
 import com.apexballistics.item.ArmorModuleItem;
@@ -14,6 +16,7 @@ import com.apexballistics.item.RailgunItem;
 import com.apexballistics.item.GaussRifleItem;
 import com.apexballistics.item.WeaponHeat;
 import com.apexballistics.registry.ModBlockEntities;
+import com.apexballistics.registry.ModEntities;
 import com.apexballistics.registry.ModItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -73,12 +76,12 @@ public class DefenseSystemBlockEntity extends BlockEntity implements EmpSensitiv
         switch (systemType()) {
             case CIWS -> {
                 if (tick % 5 == 0) {
-                    engageMissile(42, 8);
+                    engageAirTarget(80, 8, true);
                 }
             }
             case LASER_DEFENSE -> {
                 if (tick % 10 == 0) {
-                    engageMissile(72, 30);
+                    engageAirTarget(96, 30, false);
                 }
             }
             case PASSIVE_RADAR -> {
@@ -91,30 +94,63 @@ public class DefenseSystemBlockEntity extends BlockEntity implements EmpSensitiv
         }
     }
 
-    private void engageMissile(double range, int energyCost) {
+    private void engageAirTarget(double range, int energyCost, boolean tracers) {
         if (!(level instanceof ServerLevel server) || energy < energyCost || integrity < 25) {
             return;
         }
         Player ownerPlayer = owner == null ? null : level.getPlayerByUUID(owner);
-        List<MissileEntity> contacts = level.getEntitiesOfClass(MissileEntity.class,
-                new AABB(worldPosition).inflate(range), missile -> {
-                    Entity missileOwner = missile.getOwner();
-                    return missileOwner == null || FactionRelations.isHostile(ownerPlayer, missileOwner);
-                });
-        MissileEntity target = contacts.stream().min(Comparator.comparingDouble(
-                missile -> missile.distanceToSqr(Vec3.atCenterOf(worldPosition)))).orElse(null);
+        Vec3 origin = Vec3.atCenterOf(worldPosition).add(0, 1.45, 0);
+        List<Entity> contacts = level.getEntities((Entity) null, new AABB(worldPosition).inflate(range), entity -> {
+            if (!(entity instanceof AerialThreat) || !entity.isAlive()) {
+                return false;
+            }
+            Entity threatOwner = entity instanceof net.minecraft.world.entity.projectile.Projectile projectile
+                    ? projectile.getOwner() : null;
+            return threatOwner == null || FactionRelations.isHostile(ownerPlayer, threatOwner);
+        });
+        Entity target = contacts.stream().min(Comparator.comparingDouble(
+                entity -> entity.distanceToSqr(origin))).orElse(null);
         if (target == null) {
             return;
         }
         energy -= energyCost;
-        Vec3 midpoint = target.position().add(Vec3.atCenterOf(worldPosition)).scale(0.5);
-        server.sendParticles(systemType() == SystemType.CIWS ? ParticleTypes.CRIT : ParticleTypes.ELECTRIC_SPARK,
-                midpoint.x, midpoint.y, midpoint.z, systemType() == SystemType.CIWS ? 16 : 28,
-                0.4, 0.4, 0.4, 0.03);
+        Vec3 to = target.position().add(0, target.getBbHeight() * 0.5, 0).subtract(origin);
+        if (tracers) {
+            Vec3 dir = to.normalize();
+            int burst = 8;
+            for (int i = 0; i < burst; i++) {
+                CiwsTracerEntity tracer = new CiwsTracerEntity(ModEntities.CIWS_TRACER.get(), level);
+                tracer.setOwner(ownerPlayer);
+                tracer.setPos(origin.x, origin.y, origin.z);
+                double spread = 0.018;
+                Vec3 vel = dir.add(
+                        (level.random.nextDouble() - 0.5) * spread,
+                        (level.random.nextDouble() - 0.5) * spread,
+                        (level.random.nextDouble() - 0.5) * spread).normalize().scale(8.5);
+                tracer.setDeltaMovement(vel);
+                level.addFreshEntity(tracer);
+            }
+            int steps = 14;
+            for (int i = 0; i <= steps; i++) {
+                Vec3 point = origin.add(to.scale(i / (double) steps));
+                server.sendParticles(CiwsTracerEntity.TRACER, point.x, point.y, point.z, 1, 0.0, 0.0, 0.0, 0.0);
+            }
+            if (target instanceof AerialThreat threat) {
+                threat.intercept();
+            }
+        } else {
+            int steps = 16;
+            for (int i = 0; i <= steps; i++) {
+                Vec3 point = origin.add(to.scale(i / (double) steps));
+                server.sendParticles(ParticleTypes.ELECTRIC_SPARK, point.x, point.y, point.z, 2, 0.05, 0.05, 0.05, 0.01);
+            }
+            if (target instanceof AerialThreat threat) {
+                threat.intercept();
+            }
+        }
         level.playSound(null, worldPosition,
-                systemType() == SystemType.CIWS ? SoundEvents.CROSSBOW_SHOOT : SoundEvents.BEACON_POWER_SELECT,
-                SoundSource.BLOCKS, 1.0f, systemType() == SystemType.CIWS ? 0.7f : 1.8f);
-        target.intercept();
+                tracers ? SoundEvents.CROSSBOW_SHOOT : SoundEvents.BEACON_POWER_SELECT,
+                SoundSource.BLOCKS, tracers ? 1.15f : 1.0f, tracers ? 0.55f : 1.8f);
         setChanged();
     }
 

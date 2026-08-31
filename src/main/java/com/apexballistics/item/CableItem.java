@@ -24,7 +24,8 @@ public class CableItem extends BlockItem {
         Level level = context.getLevel();
         BlockPos pos = context.getClickedPos();
         BlockEntity be = level.getBlockEntity(pos);
-        if (be instanceof CableLinkable) {
+        var player = context.getPlayer();
+        if (be instanceof CableLinkable && player != null && player.isShiftKeyDown()) {
             if (!level.isClientSide) {
                 handleLink(context, be);
             }

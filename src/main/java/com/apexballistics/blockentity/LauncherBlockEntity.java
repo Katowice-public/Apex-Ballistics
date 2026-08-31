@@ -5,6 +5,7 @@ import com.apexballistics.block.LauncherType;
 import com.apexballistics.defense.EmpSensitive;
 import com.apexballistics.defense.FactionRelations;
 import com.apexballistics.entity.MissileEntity;
+import com.apexballistics.entity.StrikeDroneEntity;
 import com.apexballistics.item.MissileItem;
 import com.apexballistics.item.MissileKind;
 import com.apexballistics.menu.LauncherMenu;
@@ -213,6 +214,7 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive, Me
         if (!wetLaunch) {
             entity.setDeltaMovement(entity.getDeltaMovement().scale(0.65));
         }
+        entity.setDeltaMovement(entity.getDeltaMovement().scale(entity.speedMultiplier()));
         if (launcherType() == LauncherType.SILO) {
             setSiloHatches(true);
         }
@@ -266,6 +268,11 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive, Me
     private boolean isAirThreat(Entity entity) {
         if (entity == null || !entity.isAlive()) {
             return false;
+        }
+        if (entity instanceof StrikeDroneEntity drone) {
+            Entity own = operator == null || level == null ? null : level.getPlayerByUUID(operator);
+            Entity droneOwner = drone.getOwner();
+            return droneOwner == null || FactionRelations.isHostile(own, droneOwner);
         }
         if (entity instanceof MissileEntity missileEntity) {
             Entity own = operator == null || level == null ? null : level.getPlayerByUUID(operator);

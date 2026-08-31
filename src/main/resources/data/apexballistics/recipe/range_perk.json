@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "apexballistics:circuit_board"
+    },
+    {
+      "item": "apexballistics:guidance_chip"
+    },
+    {
+      "item": "minecraft:ender_pearl"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:range_perk"
+  }
+}

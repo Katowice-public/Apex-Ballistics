@@ -46,7 +46,8 @@ public class MissileLauncherItem extends Item {
             }
             missile.setOwner(player);
             missile.setPos(player.getX(), player.getEyeY() - 0.1, player.getZ());
-            missile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0f, kind.launchSpeed() + 0.4f, 0.15f);
+            missile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0f,
+                    (kind.launchSpeed() + 0.4f) * missile.speedMultiplier(), 0.15f);
             missile.acquireAirTarget(player);
             level.addFreshEntity(missile);
             level.playSound(null, player.getX(), player.getY(), player.getZ(),

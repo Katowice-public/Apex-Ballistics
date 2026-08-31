@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "apexballistics:circuit_board"
+    },
+    {
+      "item": "apexballistics:guidance_chip"
+    },
+    {
+      "item": "minecraft:spyglass"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "apexballistics:accuracy_perk"
+  }
+}

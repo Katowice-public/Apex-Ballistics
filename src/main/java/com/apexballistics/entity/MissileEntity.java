@@ -9,6 +9,7 @@ import com.apexballistics.item.GuidanceMode;
 import com.apexballistics.item.MissileKind;
 import com.apexballistics.item.MissileSpecification;
 import com.apexballistics.item.PayloadType;
+import com.apexballistics.item.WeaponPerks;
 import com.apexballistics.item.PoweredEquipment;
 import com.apexballistics.registry.ModItems;
 import com.apexballistics.registry.ModSounds;
@@ -54,7 +55,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class MissileEntity extends Projectile implements IEntityAdditionalSpawnData {
+public class MissileEntity extends Projectile implements AerialThreat, IEntityAdditionalSpawnData {
     private static final EntityDataAccessor<Integer> DATA_KIND = SynchedEntityData.defineId(MissileEntity.class, EntityDataSerializers.INT);
 
     private BlockPos targetPos;
@@ -80,6 +81,9 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
     private int delayedFuse = -1;
     private float launchQuality = 1.0f;
     private double launchY;
+    private float rangeMul = 1.0f;
+    private float damageMul = 1.0f;
+    private float speedMul = 1.0f;
 
     public MissileEntity(EntityType<? extends MissileEntity> type, Level level) {
         super(type, level);
@@ -135,6 +139,19 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
         if (!spec.waypoints().isEmpty()) {
             setWaypoints(spec.waypoints());
         }
+        WeaponPerks perks = WeaponPerks.fromStack(stack);
+        rangeMul = perks.rangeMultiplier();
+        damageMul = perks.damageMultiplier();
+        speedMul = perks.speedMultiplier();
+        accuracy *= perks.accuracyFactor();
+    }
+
+    public float speedMultiplier() {
+        return speedMul;
+    }
+
+    private float flightSpeed() {
+        return getKind().launchSpeed() * speedMul;
     }
 
     public void setWaypoints(List<BlockPos> points) {
@@ -202,10 +219,18 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
             return false;
         }
         if (getKind() == MissileKind.INTERCEPTOR) {
+            if (entity instanceof StrikeDroneEntity drone) {
+                return drone.getOwner() == null
+                        || FactionRelations.isHostile(getOwner(), drone.getOwner());
+            }
             return entity instanceof MissileEntity other
                     && other.getKind() != MissileKind.INTERCEPTOR
                     && (other.getOwner() == null
                     || FactionRelations.isHostile(getOwner(), other.getOwner()));
+        }
+        if (entity instanceof StrikeDroneEntity drone) {
+            return drone.getOwner() == null
+                    || FactionRelations.isHostile(getOwner(), drone.getOwner());
         }
         if (entity instanceof MissileEntity other) {
             return other.getKind().profile() != MissileKind.FlightProfile.HOMING_AIR
@@ -255,7 +280,7 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
                 return;
             }
         }
-        if (flightAge > kind.maxLife()) {
+        if (flightAge > kind.maxLife() * rangeMul) {
             detonate();
             return;
         }
@@ -375,10 +400,13 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
             child.antiJam = antiJam;
             child.accuracy = Math.max(1.0f, accuracy * 0.45f);
             child.launchQuality = launchQuality;
+            child.rangeMul = rangeMul;
+            child.damageMul = damageMul;
+            child.speedMul = speedMul;
             child.setTargetPos(targetPos.offset(offset[0], 0, offset[1]));
             Vec3 direction = Vec3.atCenterOf(child.targetPos).subtract(position()).normalize();
             child.setDeltaMovement(getDeltaMovement().scale(0.42)
-                    .add(direction.scale(getKind().launchSpeed() * 0.75)));
+                    .add(direction.scale(flightSpeed() * 0.75)));
             level().addFreshEntity(child);
         }
         server.sendParticles(ParticleTypes.FIREWORK, getX(), getY(), getZ(),
@@ -422,12 +450,12 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
                     Vec3 to = Vec3.atCenterOf(activeTarget).subtract(position());
                     double horiz = Math.sqrt(to.x * to.x + to.z * to.z);
                     if (flightAge < 35) {
-                        setDeltaMovement(vel.x * 0.92, Math.max(vel.y, kind.launchSpeed()), vel.z * 0.92);
+                        setDeltaMovement(vel.x * 0.92, Math.max(vel.y, flightSpeed()), vel.z * 0.92);
                     } else if (getY() < level().getMaxBuildHeight() - 8 && horiz > 18 && vel.y > 0.05) {
-                        Vec3 coast = new Vec3(to.x, 0, to.z).normalize().scale(kind.launchSpeed() * 0.85).add(0, 0.35, 0);
+                        Vec3 coast = new Vec3(to.x, 0, to.z).normalize().scale(flightSpeed() * 0.85).add(0, 0.35, 0);
                         setDeltaMovement(vel.scale(0.82).add(coast.scale(0.22)));
                     } else {
-                        Vec3 dive = to.normalize().scale(kind.launchSpeed() * 1.15);
+                        Vec3 dive = to.normalize().scale(flightSpeed() * 1.15);
                         setDeltaMovement(vel.scale(0.78).add(dive.scale(0.28)));
                     }
                 } else {
@@ -458,9 +486,9 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
                     desired = new Vec3(desired.x, Math.max(-0.05, Math.min(0.12, desired.y)), desired.z);
                 }
                 if (desired.lengthSqr() > 1.0E-4) {
-                    Vec3 steered = vel.scale(0.86).add(desired.normalize().scale(kind.launchSpeed() * 0.22));
-                    if (steered.length() > kind.launchSpeed() * 1.2) {
-                        steered = steered.normalize().scale(kind.launchSpeed() * 1.2);
+                    Vec3 steered = vel.scale(0.86).add(desired.normalize().scale(flightSpeed() * 0.22));
+                    if (steered.length() > flightSpeed() * 1.2) {
+                        steered = steered.normalize().scale(flightSpeed() * 1.2);
                     }
                     setDeltaMovement(steered);
                 }
@@ -482,7 +510,7 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
                 }
                 if (lock != null && lock.isAlive()) {
                     Vec3 to = lock.getEyePosition().subtract(position());
-                    Vec3 steered = vel.scale(0.72).add(to.normalize().scale(kind.launchSpeed() * 0.42));
+                    Vec3 steered = vel.scale(0.72).add(to.normalize().scale(flightSpeed() * 0.42));
                     setDeltaMovement(steered);
                     warnTarget(lock);
                     double fuseRange = fuse == FuseMode.PROXIMITY ? 12.25 : 4.0;
@@ -584,7 +612,7 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
             case DECOY -> 0.0f;
             case MIRV, STANDARD -> 1.0f;
         };
-        detonateWithPower(power);
+        detonateWithPower(power * damageMul);
     }
 
     private void detonateWithPower(float power) {
@@ -691,6 +719,9 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
         tag.putInt("DelayedFuse", delayedFuse);
         tag.putFloat("LaunchQuality", launchQuality);
         tag.putDouble("LaunchY", launchY);
+        tag.putFloat("RangeMul", rangeMul);
+        tag.putFloat("DamageMul", damageMul);
+        tag.putFloat("SpeedMul", speedMul);
         if (targetPos != null) {
             tag.putInt("Tx", targetPos.getX());
             tag.putInt("Ty", targetPos.getY());
@@ -730,6 +761,9 @@ public class MissileEntity extends Projectile implements IEntityAdditionalSpawnD
         delayedFuse = tag.contains("DelayedFuse") ? tag.getInt("DelayedFuse") : -1;
         launchQuality = tag.contains("LaunchQuality") ? tag.getFloat("LaunchQuality") : 1.0f;
         launchY = tag.contains("LaunchY") ? tag.getDouble("LaunchY") : getY();
+        rangeMul = tag.contains("RangeMul") ? tag.getFloat("RangeMul") : 1.0f;
+        damageMul = tag.contains("DamageMul") ? tag.getFloat("DamageMul") : 1.0f;
+        speedMul = tag.contains("SpeedMul") ? tag.getFloat("SpeedMul") : 1.0f;
         if (tag.contains("Tx")) {
             targetPos = new BlockPos(tag.getInt("Tx"), tag.getInt("Ty"), tag.getInt("Tz"));
         }

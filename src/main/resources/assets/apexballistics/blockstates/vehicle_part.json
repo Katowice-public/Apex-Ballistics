@@ -1,0 +1,9 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "apexballistics:block/vehicle_part"
+      }
+    }
+  ]
+}

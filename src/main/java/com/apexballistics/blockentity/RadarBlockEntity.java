@@ -1,7 +1,9 @@
 package com.apexballistics.blockentity;
 
 import com.apexballistics.block.CableLinkable;
+import com.apexballistics.block.CableNetwork;
 import com.apexballistics.entity.MissileEntity;
+import com.apexballistics.entity.StrikeDroneEntity;
 import com.apexballistics.defense.EmpSensitive;
 import com.apexballistics.defense.FactionRelations;
 import com.apexballistics.item.MissileKind;
@@ -131,7 +133,7 @@ public class RadarBlockEntity extends BlockEntity implements EmpSensitive, Cable
     }
 
     private boolean isContact(Entity entity) {
-        if (entity instanceof MissileEntity) {
+        if (entity instanceof MissileEntity || entity instanceof StrikeDroneEntity) {
             return true;
         }
         if (entity instanceof Player player) {
@@ -173,19 +175,28 @@ public class RadarBlockEntity extends BlockEntity implements EmpSensitive, Cable
     }
 
     private void alertLinkedSiren() {
-        if (linkedSiren == null || level == null) {
+        if (level == null) {
             return;
         }
-        if (!(level.getBlockEntity(linkedSiren) instanceof SirenBlockEntity siren)) {
+        java.util.LinkedHashSet<SirenBlockEntity> sirens = new java.util.LinkedHashSet<>();
+        for (var device : CableNetwork.findDevices(level, worldPosition, be -> be instanceof SirenBlockEntity)) {
+            sirens.add((SirenBlockEntity) device);
+        }
+        if (linkedSiren != null && level.getBlockEntity(linkedSiren) instanceof SirenBlockEntity peer) {
+            sirens.add(peer);
+        }
+        if (sirens.isEmpty()) {
             return;
         }
         AABB box = new AABB(worldPosition).inflate(96);
-        boolean inbound = !level.getEntities((Entity) null, box, this::isHostileMissile).isEmpty();
+        boolean inbound = !level.getEntities((Entity) null, box, this::isHostileAirThreat).isEmpty();
         if (!inbound) {
             return;
         }
-        boolean already = siren.sounding();
-        siren.triggerAutoAlert();
+        boolean already = sirens.stream().anyMatch(SirenBlockEntity::sounding);
+        for (SirenBlockEntity siren : sirens) {
+            siren.triggerAutoAlert();
+        }
         if (already) {
             return;
         }
@@ -196,7 +207,16 @@ public class RadarBlockEntity extends BlockEntity implements EmpSensitive, Cable
         }
     }
 
-    private boolean isHostileMissile(Entity entity) {
+    private boolean isHostileAirThreat(Entity entity) {
+        if (entity instanceof StrikeDroneEntity drone) {
+            Entity droneOwner = drone.getOwner();
+            Entity radarOwner = owner == null || level == null ? null : level.getPlayerByUUID(owner);
+            if (radarOwner != null && droneOwner == radarOwner) {
+                return false;
+            }
+            return radarOwner == null || droneOwner == null
+                    || FactionRelations.isHostile(radarOwner, droneOwner);
+        }
         if (!(entity instanceof MissileEntity missile)
                 || missile.getKind().profile() == MissileKind.FlightProfile.HOMING_AIR) {
             return false;

@@ -2,8 +2,10 @@ package com.apexballistics.registry;
 
 import com.apexballistics.ApexBallistics;
 import com.apexballistics.blockentity.DefenseSystemBlockEntity;
+import com.apexballistics.blockentity.DroneLauncherBlockEntity;
 import com.apexballistics.blockentity.LauncherBlockEntity;
 import com.apexballistics.blockentity.MissileShowcaseBlockEntity;
+import com.apexballistics.blockentity.PerkWorkbenchBlockEntity;
 import com.apexballistics.blockentity.RadarBlockEntity;
 import com.apexballistics.blockentity.SirenBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -53,6 +55,14 @@ public final class ModBlockEntities {
     public static final RegistryObject<BlockEntityType<MissileShowcaseBlockEntity>> SHOWCASE =
             BLOCK_ENTITIES.register("showcase", () -> BlockEntityType.Builder.of(
                     MissileShowcaseBlockEntity::new, ModBlocks.MISSILE_SHOWCASE.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<DroneLauncherBlockEntity>> DRONE_LAUNCHER =
+            BLOCK_ENTITIES.register("drone_launcher", () -> BlockEntityType.Builder.of(
+                    DroneLauncherBlockEntity::new, ModBlocks.DRONE_LAUNCHER.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<PerkWorkbenchBlockEntity>> PERK_WORKBENCH =
+            BLOCK_ENTITIES.register("perk_workbench", () -> BlockEntityType.Builder.of(
+                    PerkWorkbenchBlockEntity::new, ModBlocks.PERK_WORKBENCH.get()).build(null));
 
     private ModBlockEntities() {
     }

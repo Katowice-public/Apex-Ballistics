@@ -27,6 +27,7 @@ from obj_meshes import (
     add_ciws_item_mesh,
     add_ciws_turret,
     add_component_mesh,
+    add_drone_launcher_mesh,
     add_facility_door_item_mesh,
     add_facility_door_mesh,
     add_handheld_mesh,
@@ -37,6 +38,7 @@ from obj_meshes import (
     add_missile_mesh,
     add_nuclear_horn,
     add_nuclear_siren_base,
+    add_perk_workbench_mesh,
     add_radar_base_mesh,
     add_radar_dish_mesh,
     add_radar_item_mesh,
@@ -49,6 +51,7 @@ from textures import (
     build16_texture,
     item_texture,
     launcher_gui_texture,
+    panel_gui_texture,
     showcase_gui_texture,
     siren_gui_texture,
     write_png,
@@ -72,6 +75,8 @@ ITEMS = [
     "three_stage_motor", "precision_package", "reliability_package", "anti_jam_module",
     "flare", "jammer", "thermal_module", "rwr_module", "shield_module",
     "mobility_module", "camouflage_module", "medical_module",
+    "strike_drone", "he_bomb", "cluster_bomb", "bunker_bomb", "incendiary_bomb",
+    "range_perk", "damage_perk", "accuracy_perk", "speed_perk",
 ]
 HANDHELD = {"gauss_rifle", "railgun", "plasma_blade", "manpads", "jammer"}
 LAUNCHER_BLOCKS = {
@@ -82,12 +87,14 @@ HARDWARE_BLOCKS = [
     "ciws", "laser_defense", "passive_radar", "command_console", "submarine_control",
     "missile_rack", "loading_crane", "propellant_refinery", "maintenance_station",
     "capacitor_charger", *siren_ids(), "cable", "missile_showcase",
+    "drone_launcher", "perk_workbench",
 ]
 BUILD_16 = all_16_build_ids()
 NEW_BUILD = new_build_ids()
 DOORS = door_ids()
-ALL_BLOCKS = HARDWARE_BLOCKS + BUILD_16 + DOORS + ["door_part"]
+ALL_BLOCKS = HARDWARE_BLOCKS + BUILD_16 + DOORS + ["door_part", "vehicle_part"]
 BLOCKS = HARDWARE_BLOCKS + BUILD_16
+FACING_BLOCKS = set(LAUNCHER_BLOCKS) | set(siren_ids()) | {"drone_launcher", "perk_workbench"}
 
 
 def write_json(path: Path, obj) -> None:
@@ -154,22 +161,15 @@ def main() -> None:
             })
             continue
         write_png(tex_block / f"{name}.png", 512, 512, block_texture(name))
+        if name == "cable":
+            continue
         if name not in OBJ_BLOCKS:
             write_json(models_block / f"{name}.json", {
                 "parent": "minecraft:block/cube_all",
                 "textures": {"all": f"apexballistics:block/{name}"},
             })
             write_json(models_item / f"{name}.json", {"parent": f"apexballistics:block/{name}"})
-        if name in LAUNCHER_BLOCKS:
-            write_json(blockstates / f"{name}.json", {
-                "variants": {
-                    "facing=north": {"model": f"apexballistics:block/{name}"},
-                    "facing=south": {"model": f"apexballistics:block/{name}", "y": 180},
-                    "facing=west": {"model": f"apexballistics:block/{name}", "y": 270},
-                    "facing=east": {"model": f"apexballistics:block/{name}", "y": 90},
-                }
-            })
-        elif name in siren_ids() or name == "cable":
+        if name in FACING_BLOCKS:
             write_json(blockstates / f"{name}.json", {
                 "variants": {
                     "facing=north": {"model": f"apexballistics:block/{name}"},
@@ -238,6 +238,13 @@ def main() -> None:
         "parent": "minecraft:block/block",
         "textures": {"particle": "apexballistics:block/blast_steel"},
     })
+    write_json(blockstates / "vehicle_part.json", {
+        "multipart": [{"apply": {"model": "apexballistics:block/vehicle_part"}}]
+    })
+    write_json(models_block / "vehicle_part.json", {
+        "parent": "minecraft:block/block",
+        "textures": {"particle": "apexballistics:block/drone_launcher"},
+    })
 
     item_display = {
         "gui": {"rotation": [25, 225, 0], "translation": [0, 0, 0], "scale": [0.72, 0.72, 0.72]},
@@ -252,6 +259,20 @@ def main() -> None:
         "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [1.00, 1.00, 1.00]},
         "thirdperson_righthand": {"rotation": [0, 90, 55], "translation": [0, 4, 1], "scale": [0.10, 0.10, 0.10]},
         "firstperson_righthand": {"rotation": [0, 90, 25], "translation": [1, 2, 1], "scale": [0.12, 0.12, 0.12]},
+    }
+    drone_display = {
+        "gui": {"rotation": [25, 225, 0], "translation": [0, 2, 0], "scale": [0.22, 0.22, 0.22]},
+        "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.18, 0.18, 0.18]},
+        "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [0.85, 0.85, 0.85]},
+        "thirdperson_righthand": {"rotation": [0, 90, 55], "translation": [0, 3, 1], "scale": [0.18, 0.18, 0.18]},
+        "firstperson_righthand": {"rotation": [0, 90, 25], "translation": [1, 2, 1], "scale": [0.22, 0.22, 0.22]},
+    }
+    vehicle_display = {
+        "gui": {"rotation": [20, 210, 0], "translation": [0, 0, 0], "scale": [0.18, 0.18, 0.18]},
+        "ground": {"rotation": [0, 0, 0], "translation": [0, 2, 0], "scale": [0.12, 0.12, 0.12]},
+        "fixed": {"rotation": [0, 0, 0], "translation": [0, 0, 0], "scale": [0.22, 0.22, 0.22]},
+        "thirdperson_righthand": {"rotation": [75, 45, 0], "translation": [0, 2.5, 0], "scale": [0.12, 0.12, 0.12]},
+        "firstperson_righthand": {"rotation": [0, 45, 0], "translation": [0, 2, 0], "scale": [0.14, 0.14, 0.14]},
     }
     weapon_display = {
         "gui": {"rotation": [45, 225, 0], "translation": [0, 2, 0], "scale": [0.85, 0.85, 0.85]},
@@ -283,7 +304,7 @@ def main() -> None:
         write_json(models_item / f"{name}.json", obj_descriptor(
             f"apexballistics:models/item/{name}.obj",
             f"apexballistics:item/{name}",
-            missile_display,
+            drone_display if name == "strike_drone" else missile_display,
         ))
 
     for name in sorted(HANDHELD_OBJ):
@@ -305,7 +326,10 @@ def main() -> None:
             f"apexballistics:block/{name}",
         )
         write_json(models_block / f"{name}.json", descriptor)
-        write_json(models_item / f"{name}.json", descriptor | {"display": item_display})
+        if name == "drone_launcher":
+            write_json(models_item / f"{name}.json", descriptor | {"display": vehicle_display})
+        else:
+            write_json(models_item / f"{name}.json", descriptor | {"display": item_display})
 
     for name in sorted(OBJ_BLOCKS - LAUNCHER_BLOCKS):
         mesh = ObjBuilder(name)
@@ -317,10 +341,12 @@ def main() -> None:
             add_industrial_siren_mesh(mesh)
         elif name == "nuclear_warning_siren":
             add_nuclear_siren_base(mesh)
-        elif name == "cable":
-            add_cable_block_mesh(mesh)
         elif name == "missile_showcase":
             add_showcase_mesh(mesh)
+        elif name == "drone_launcher":
+            add_drone_launcher_mesh(mesh)
+        elif name == "perk_workbench":
+            add_perk_workbench_mesh(mesh)
         else:
             add_system_mesh(mesh, name)
         mesh.write(models_block)
@@ -356,15 +382,8 @@ def main() -> None:
                 "apexballistics:block/laser_defense",
                 item_display,
             ))
-        elif name == "cable":
-            cable_item = ObjBuilder("cable")
-            add_cable_item_mesh(cable_item)
-            cable_item.write(models_item)
-            write_json(models_item / "cable.json", obj_descriptor(
-                "apexballistics:models/item/cable.obj",
-                "apexballistics:block/cable",
-                item_display,
-            ))
+        elif name == "drone_launcher":
+            write_json(models_item / "drone_launcher.json", descriptor | {"display": vehicle_display})
         elif name == "air_raid_siren":
             siren_item = ObjBuilder("air_raid_siren")
             add_air_raid_siren_base(siren_item)
@@ -450,6 +469,42 @@ def main() -> None:
     for siren in siren_ids():
         write_png(tex_gui / f"siren_{siren}.png", 512, 512, siren_gui_texture(siren))
     write_png(tex_gui / "missile_showcase.png", 512, 512, showcase_gui_texture())
+    write_png(tex_gui / "drone_launcher.png", 512, 512,
+              panel_gui_texture("drone", "STRIKE DRONE", "TEL", (88, 176, 92, 255), "mobile"))
+    write_png(tex_gui / "perk_workbench.png", 512, 512,
+              panel_gui_texture("perk", "PERK BENCH", "MOD", (72, 168, 210, 255), "showcase"))
+
+    def cube_faces(texture="#0"):
+        return {face: {"texture": texture, "uv": [0, 0, 16, 16]} for face in
+                ("north", "south", "east", "west", "up", "down")}
+
+    write_json(models_block / "cable_core.json", {
+        "parent": "minecraft:block/block",
+        "textures": {"0": "apexballistics:block/cable", "particle": "apexballistics:block/cable"},
+        "elements": [{"from": [6, 0, 6], "to": [10, 3, 10], "faces": cube_faces()}],
+    })
+    write_json(models_block / "cable_side.json", {
+        "parent": "minecraft:block/block",
+        "textures": {"0": "apexballistics:block/cable", "particle": "apexballistics:block/cable"},
+        "elements": [{"from": [6, 0, 0], "to": [10, 3, 6], "faces": cube_faces()}],
+    })
+    write_json(blockstates / "cable.json", {
+        "multipart": [
+            {"apply": {"model": "apexballistics:block/cable_core"}},
+            {"when": {"north": "true"}, "apply": {"model": "apexballistics:block/cable_side"}},
+            {"when": {"east": "true"}, "apply": {"model": "apexballistics:block/cable_side", "y": 90}},
+            {"when": {"south": "true"}, "apply": {"model": "apexballistics:block/cable_side", "y": 180}},
+            {"when": {"west": "true"}, "apply": {"model": "apexballistics:block/cable_side", "y": 270}},
+        ]
+    })
+    cable_item = ObjBuilder("cable")
+    add_cable_item_mesh(cable_item)
+    cable_item.write(models_item)
+    write_json(models_item / "cable.json", obj_descriptor(
+        "apexballistics:models/item/cable.obj",
+        "apexballistics:block/cable",
+        item_display,
+    ))
 
     recipes = DATA / "recipe"
     recipes.mkdir(parents=True, exist_ok=True)
@@ -732,7 +787,7 @@ def main() -> None:
         "passive_radar", "command_console", "submarine_control", "missile_rack",
         "loading_crane", "propellant_refinery", "maintenance_station",
         "capacitor_charger",
-        *siren_ids(), "cable", "missile_showcase",
+        *siren_ids(), "cable", "missile_showcase", "drone_launcher", "perk_workbench",
     ]
     for name in infrastructure:
         write_json(recipes / f"{name}.json", shaped(f"apexballistics:{name}", 1, [
@@ -818,9 +873,56 @@ def main() -> None:
         "A": item_ing("apexballistics:apex_alloy"),
     }))
 
+    write_json(recipes / "strike_drone.json", shaped("apexballistics:strike_drone", 1, [
+        " A ",
+        "FCE",
+        " T ",
+    ], {
+        "A": item_ing("apexballistics:apex_alloy"),
+        "F": item_ing("minecraft:phantom_membrane"),
+        "C": item_ing("apexballistics:circuit_board"),
+        "E": item_ing("apexballistics:guidance_chip"),
+        "T": item_ing("minecraft:tnt"),
+    }))
+    write_json(recipes / "he_bomb.json", shaped("apexballistics:he_bomb", 2, [
+        " T ",
+        "TIT",
+        " T ",
+    ], {
+        "T": item_ing("minecraft:tnt"),
+        "I": item_ing("minecraft:iron_ingot"),
+    }))
+    write_json(recipes / "cluster_bomb.json", shapeless("apexballistics:cluster_bomb", 1, [
+        item_ing("apexballistics:he_bomb"),
+        item_ing("minecraft:firework_rocket"),
+        item_ing("minecraft:iron_nugget"),
+    ]))
+    write_json(recipes / "bunker_bomb.json", shapeless("apexballistics:bunker_bomb", 1, [
+        item_ing("apexballistics:he_bomb"),
+        item_ing("minecraft:obsidian"),
+        item_ing("minecraft:anvil"),
+    ]))
+    write_json(recipes / "incendiary_bomb.json", shapeless("apexballistics:incendiary_bomb", 1, [
+        item_ing("apexballistics:he_bomb"),
+        item_ing("minecraft:blaze_powder"),
+        item_ing("minecraft:fire_charge"),
+    ]))
+    perk_reagents = {
+        "range_perk": "minecraft:ender_pearl",
+        "damage_perk": "apexballistics:warhead",
+        "accuracy_perk": "minecraft:spyglass",
+        "speed_perk": "apexballistics:advanced_propellant",
+    }
+    for perk, reagent in perk_reagents.items():
+        write_json(recipes / f"{perk}.json", shapeless(f"apexballistics:{perk}", 1, [
+            item_ing("apexballistics:circuit_board"),
+            item_ing("apexballistics:guidance_chip"),
+            item_ing(reagent),
+        ]))
+
     loot = DATA / "loot_table" / "blocks"
     for name in ALL_BLOCKS:
-        if name == "door_part":
+        if name in {"door_part", "vehicle_part"}:
             write_json(loot / f"{name}.json", {
                 "type": "minecraft:block",
                 "pools": [],
@@ -854,7 +956,14 @@ def main() -> None:
         "mirv_warhead": "MIRV Warhead", "emp_payload": "EMP Payload",
         "anti_jam_module": "Anti-Jam Module", "jammer": "Electronic Jammer",
         "manpads": "MANPADS",
-        "manpads": "MANPADS",
+        "ciws": "CIWS Point Defense",
+        "drone_launcher": "Strike Drone Launcher",
+        "perk_workbench": "Perk Workbench",
+        "he_bomb": "HE Bomb",
+        "range_perk": "Range Perk",
+        "damage_perk": "Damage Perk",
+        "accuracy_perk": "Accuracy Perk",
+        "speed_perk": "Speed Perk",
     }
     for name in ITEMS:
         lang[f"item.apexballistics.{name}"] = display_overrides.get(
@@ -869,7 +978,11 @@ def main() -> None:
     lang["item.apexballistics.nuclear_horn_component"] = "Civil Defense Horn"
     lang["itemGroup.apexballistics.build"] = "Apex Build Blocks"
     lang["block.apexballistics.door_part"] = "Facility Door Segment"
+    lang["block.apexballistics.vehicle_part"] = "Drone Launcher Segment"
     lang["entity.apexballistics.flare"] = "Countermeasure Flare"
+    lang["entity.apexballistics.strike_drone"] = "Strike Drone"
+    lang["entity.apexballistics.bomb"] = "Dropped Bomb"
+    lang["entity.apexballistics.ciws_tracer"] = "CIWS Tracer"
     lang["item.apexballistics.interceptor.desc"] = "High-altitude interceptor optimized for hostile missiles."
     lang["item.apexballistics.missile_module.desc"] = "Install at a Missile Assembly Station."
     lang["item.apexballistics.jammer.desc"] = "Disrupts nearby radar guidance while active; consumes durability."
@@ -914,6 +1027,29 @@ def main() -> None:
         "screen.apexballistics.siren.silent": "Standby",
         "screen.apexballistics.showcase": "Missile Showcase",
         "screen.apexballistics.showcase.empty": "No round loaded",
+        "screen.apexballistics.drone_launcher": "Strike Drone Mobile Launcher",
+        "screen.apexballistics.perk_workbench": "Weapon Perk Workbench",
+        "screen.apexballistics.perk.apply": "INSTALL PERK",
+        "screen.apexballistics.perk.empty": "Insert a missile or strike drone",
+        "item.apexballistics.strike_drone.desc": "High-altitude strike UAV. Load into a mobile launcher with a bomb and a targeting tablet.",
+        "item.apexballistics.he_bomb.desc": "General-purpose high-explosive bomb for strike drones.",
+        "item.apexballistics.cluster_bomb.desc": "Releases a ring of submunitions on impact.",
+        "item.apexballistics.bunker_bomb.desc": "Penetrates downward before detonating.",
+        "item.apexballistics.incendiary_bomb.desc": "Ignites the impact area.",
+        "item.apexballistics.drone_launcher.desc": "4x2 wheeled TEL. Climb to cruise altitude, then drop on the tablet grid.",
+        "item.apexballistics.perk.desc": "Workbench upgrade: %s. Stacks to rank 5.",
+        "item.apexballistics.perk.workbench": "Install at a Perk Workbench.",
+        "tooltip.apexballistics.drone_launcher_only": "Requires a strike drone launcher.",
+        "tooltip.apexballistics.perk.range": "Range rank: %s / %s",
+        "tooltip.apexballistics.perk.damage": "Damage rank: %s / %s",
+        "tooltip.apexballistics.perk.accuracy": "Accuracy rank: %s / %s",
+        "tooltip.apexballistics.perk.speed": "Speed rank: %s / %s",
+        "message.apexballistics.drone_launcher_blocked": "Need a 4 long x 2 wide x 2 high clear footprint.",
+        "message.apexballistics.drone_needs_load": "Load a strike drone and a bomb first.",
+        "message.apexballistics.drone_needs_target": "Load a targeting tablet with a marked grid.",
+        "message.apexballistics.perk_invalid": "Place a missile or drone and a perk chip.",
+        "message.apexballistics.perk_max": "That perk is already at rank 5.",
+        "message.apexballistics.perk_applied": "Installed %s perk.",
         "message.apexballistics.cable_start": "Cable start locked.",
         "message.apexballistics.cable_linked": "Cable linked radar to siren.",
         "message.apexballistics.cable_invalid": "Cable only links a radar to a siren.",

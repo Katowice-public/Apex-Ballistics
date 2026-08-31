@@ -1,6 +1,7 @@
 package com.apexballistics.blockentity;
 
 import com.apexballistics.block.CableLinkable;
+import com.apexballistics.block.CableNetwork;
 import com.apexballistics.block.SirenBlock;
 import com.apexballistics.block.SirenType;
 import com.apexballistics.menu.SirenMenu;
@@ -57,7 +58,13 @@ public class SirenBlockEntity extends BlockEntity implements CableLinkable, Menu
     }
 
     public boolean linked() {
-        return linkedRadar != null;
+        if (linkedRadar != null) {
+            return true;
+        }
+        if (level == null) {
+            return false;
+        }
+        return !CableNetwork.findDevices(level, worldPosition, be -> be instanceof RadarBlockEntity).isEmpty();
     }
 
     public BlockPos linkedRadar() {

@@ -1,9 +1,12 @@
 package com.apexballistics.registry;
 
 import com.apexballistics.ApexBallistics;
+import com.apexballistics.entity.BombEntity;
+import com.apexballistics.entity.CiwsTracerEntity;
 import com.apexballistics.entity.FlareEntity;
 import com.apexballistics.entity.GaussSlugEntity;
 import com.apexballistics.entity.MissileEntity;
+import com.apexballistics.entity.StrikeDroneEntity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraftforge.registries.DeferredRegister;
@@ -37,6 +40,30 @@ public final class ModEntities {
                     .updateInterval(2)
                     .fireImmune()
                     .build("flare"));
+
+    public static final RegistryObject<EntityType<StrikeDroneEntity>> STRIKE_DRONE = ENTITY_TYPES.register("strike_drone",
+            () -> EntityType.Builder.<StrikeDroneEntity>of(StrikeDroneEntity::new, MobCategory.MISC)
+                    .sized(1.6f, 0.55f)
+                    .clientTrackingRange(64)
+                    .updateInterval(1)
+                    .fireImmune()
+                    .build("strike_drone"));
+
+    public static final RegistryObject<EntityType<BombEntity>> BOMB = ENTITY_TYPES.register("bomb",
+            () -> EntityType.Builder.<BombEntity>of(BombEntity::new, MobCategory.MISC)
+                    .sized(0.55f, 0.55f)
+                    .clientTrackingRange(64)
+                    .updateInterval(1)
+                    .fireImmune()
+                    .build("bomb"));
+
+    public static final RegistryObject<EntityType<CiwsTracerEntity>> CIWS_TRACER = ENTITY_TYPES.register("ciws_tracer",
+            () -> EntityType.Builder.<CiwsTracerEntity>of(CiwsTracerEntity::new, MobCategory.MISC)
+                    .sized(0.12f, 0.12f)
+                    .clientTrackingRange(16)
+                    .updateInterval(1)
+                    .fireImmune()
+                    .build("ciws_tracer"));
 
     private ModEntities() {
     }

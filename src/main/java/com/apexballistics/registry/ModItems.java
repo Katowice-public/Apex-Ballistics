@@ -4,7 +4,10 @@ import com.apexballistics.ApexBallistics;
 import com.apexballistics.item.ApexArmorItem;
 import com.apexballistics.item.ApexTiers;
 import com.apexballistics.item.ArmorModuleItem;
+import com.apexballistics.item.BombItem;
+import com.apexballistics.item.BombKind;
 import com.apexballistics.item.CableItem;
+import com.apexballistics.item.DroneLauncherItem;
 import com.apexballistics.item.FacilityDoorItem;
 import com.apexballistics.item.FlareItem;
 import com.apexballistics.item.GaussRifleItem;
@@ -13,8 +16,11 @@ import com.apexballistics.item.MissileItem;
 import com.apexballistics.item.MissileKind;
 import com.apexballistics.item.MissileLauncherItem;
 import com.apexballistics.item.MissileModuleItem;
+import com.apexballistics.item.PerkItem;
+import com.apexballistics.item.PerkKind;
 import com.apexballistics.item.PlasmaBladeItem;
 import com.apexballistics.item.RailgunItem;
+import com.apexballistics.item.StrikeDroneItem;
 import com.apexballistics.item.TargetingTabletItem;
 import com.apexballistics.block.DoorKind;
 import net.minecraft.core.Holder;
@@ -161,6 +167,21 @@ public final class ModItems {
     public static final RegistryObject<CableItem> CABLE = ITEMS.register("cable",
             () -> new CableItem(ModBlocks.CABLE.get(), new Item.Properties().rarity(Rarity.UNCOMMON)));
     public static final RegistryObject<BlockItem> MISSILE_SHOWCASE = blockItem("missile_showcase", ModBlocks.MISSILE_SHOWCASE, Rarity.RARE);
+    public static final RegistryObject<DroneLauncherItem> DRONE_LAUNCHER = ITEMS.register("drone_launcher",
+            () -> new DroneLauncherItem(ModBlocks.DRONE_LAUNCHER.get(),
+                    new Item.Properties().rarity(Rarity.RARE).fireResistant()));
+    public static final RegistryObject<BlockItem> PERK_WORKBENCH = blockItem("perk_workbench", ModBlocks.PERK_WORKBENCH, Rarity.RARE);
+
+    public static final RegistryObject<StrikeDroneItem> STRIKE_DRONE = ITEMS.register("strike_drone",
+            () -> new StrikeDroneItem(new Item.Properties().stacksTo(4).rarity(Rarity.RARE).fireResistant()));
+    public static final RegistryObject<BombItem> HE_BOMB = bomb("he_bomb", BombKind.HE);
+    public static final RegistryObject<BombItem> CLUSTER_BOMB = bomb("cluster_bomb", BombKind.CLUSTER);
+    public static final RegistryObject<BombItem> BUNKER_BOMB = bomb("bunker_bomb", BombKind.BUNKER);
+    public static final RegistryObject<BombItem> INCENDIARY_BOMB = bomb("incendiary_bomb", BombKind.INCENDIARY);
+    public static final RegistryObject<PerkItem> RANGE_PERK = perk("range_perk", PerkKind.RANGE);
+    public static final RegistryObject<PerkItem> DAMAGE_PERK = perk("damage_perk", PerkKind.DAMAGE);
+    public static final RegistryObject<PerkItem> ACCURACY_PERK = perk("accuracy_perk", PerkKind.ACCURACY);
+    public static final RegistryObject<PerkItem> SPEED_PERK = perk("speed_perk", PerkKind.SPEED);
 
     public static final RegistryObject<BlockItem> REINFORCED_CONCRETE = blockItem("reinforced_concrete", ModBlocks.REINFORCED_CONCRETE, Rarity.COMMON);
     public static final RegistryObject<BlockItem> WHITE_REINFORCED_CONCRETE = blockItem("white_reinforced_concrete", ModBlocks.WHITE_REINFORCED_CONCRETE, Rarity.COMMON);
@@ -201,6 +222,16 @@ public final class ModItems {
     private static RegistryObject<Item> armorModule(String name, String moduleId) {
         return ITEMS.register(name, () -> new ArmorModuleItem(moduleId,
                 new Item.Properties().stacksTo(4).rarity(Rarity.RARE)));
+    }
+
+    private static RegistryObject<BombItem> bomb(String name, BombKind kind) {
+        return ITEMS.register(name, () -> new BombItem(kind,
+                new Item.Properties().stacksTo(8).rarity(Rarity.UNCOMMON).fireResistant()));
+    }
+
+    private static RegistryObject<PerkItem> perk(String name, PerkKind kind) {
+        return ITEMS.register(name, () -> new PerkItem(kind,
+                new Item.Properties().stacksTo(16).rarity(Rarity.UNCOMMON)));
     }
 
     private static <T extends net.minecraft.world.level.block.Block> RegistryObject<BlockItem> blockItem(
