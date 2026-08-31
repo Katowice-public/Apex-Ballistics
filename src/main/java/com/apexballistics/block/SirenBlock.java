@@ -1,11 +1,15 @@
 package com.apexballistics.block;
 
 import com.apexballistics.blockentity.SirenBlockEntity;
+import com.apexballistics.item.CableItem;
 import com.apexballistics.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -27,9 +31,9 @@ import org.jetbrains.annotations.Nullable;
 
 public class SirenBlock extends Block implements EntityBlock {
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
-    private static final VoxelShape AIR_RAID = Block.box(1, 0, 1, 15, 28, 15);
-    private static final VoxelShape INDUSTRIAL = Block.box(1, 0, 2, 15, 24, 14);
-    private static final VoxelShape NUCLEAR = Block.box(3, 0, 3, 13, 40, 13);
+    private static final VoxelShape AIR_RAID = Block.box(-4, 0, -4, 20, 32, 20);
+    private static final VoxelShape INDUSTRIAL = Block.box(-2, 0, -2, 18, 28, 18);
+    private static final VoxelShape NUCLEAR = Block.box(2, 0, 2, 14, 48, 14);
     private final SirenType sirenType;
 
     public SirenBlock(Properties properties, SirenType sirenType) {
@@ -82,6 +86,21 @@ public class SirenBlock extends Block implements EntityBlock {
                 siren.serverTick();
             }
         } : null;
+    }
+
+    @Override
+    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+                                              Player player, InteractionHand hand, BlockHitResult hit) {
+        if (stack.getItem() instanceof CableItem) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        if (level.getBlockEntity(pos) instanceof SirenBlockEntity siren) {
+            if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
+                serverPlayer.openMenu(siren, pos);
+            }
+            return ItemInteractionResult.sidedSuccess(level.isClientSide);
+        }
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override
