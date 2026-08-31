@@ -1,7 +1,7 @@
 # Sound credits
 
-The sound files in this directory are from the **50 CC0 Sci-Fi SFX**
-collection hosted by CC0 Sounds:
+The custom sound files bundled with Apex Ballistics are from the **50 CC0
+Sci-Fi SFX** collection hosted by CC0 Sounds:
 
 https://cc0-sounds.exi.software/collection/50-cc0-sci-fi-sfx/
 
