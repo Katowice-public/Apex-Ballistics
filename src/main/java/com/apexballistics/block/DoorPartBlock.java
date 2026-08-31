@@ -3,7 +3,9 @@ package com.apexballistics.block;
 import com.apexballistics.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
@@ -79,16 +81,32 @@ public class DoorPartBlock extends Block {
     }
 
     @Override
+    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+                                              Player player, InteractionHand hand, BlockHitResult hit) {
+        if (player.isSecondaryUseActive()) {
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        if (!level.isClientSide) {
+            toggleOrigin(level, pos, state);
+        }
+        return ItemInteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
                                                BlockHitResult hit) {
         if (!level.isClientSide) {
-            BlockPos origin = originOf(pos, state);
-            BlockState originState = level.getBlockState(origin);
-            if (originState.getBlock() instanceof FacilityDoorBlock) {
-                FacilityDoorBlock.setOpen(level, origin, !originState.getValue(FacilityDoorBlock.OPEN));
-            }
+            toggleOrigin(level, pos, state);
         }
         return InteractionResult.sidedSuccess(level.isClientSide);
+    }
+
+    private static void toggleOrigin(Level level, BlockPos pos, BlockState state) {
+        BlockPos origin = originOf(pos, state);
+        BlockState originState = level.getBlockState(origin);
+        if (originState.getBlock() instanceof FacilityDoorBlock) {
+            FacilityDoorBlock.setOpen(level, origin, !originState.getValue(FacilityDoorBlock.OPEN));
+        }
     }
 
     @Override

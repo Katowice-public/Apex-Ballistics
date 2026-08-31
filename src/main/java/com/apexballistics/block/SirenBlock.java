@@ -92,7 +92,7 @@ public class SirenBlock extends Block implements EntityBlock {
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
                                               Player player, InteractionHand hand, BlockHitResult hit) {
         if (stack.getItem() instanceof CableItem) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return ItemInteractionResult.SKIP_DEFAULT_BLOCK_INTERACTION;
         }
         if (level.getBlockEntity(pos) instanceof SirenBlockEntity siren) {
             if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {

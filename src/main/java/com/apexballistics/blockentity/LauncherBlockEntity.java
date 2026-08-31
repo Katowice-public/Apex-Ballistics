@@ -363,13 +363,24 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive, Me
         if (level == null) {
             return;
         }
-        for (BlockPos pos : BlockPos.betweenClosed(worldPosition.offset(-3, 0, -3),
-                worldPosition.offset(3, 5, 3))) {
+        for (BlockPos pos : BlockPos.betweenClosed(worldPosition.offset(-4, 0, -4),
+                worldPosition.offset(4, 8, 4))) {
             BlockState state = level.getBlockState(pos);
+            BlockPos origin = null;
             if (state.getBlock() instanceof com.apexballistics.block.FacilityDoorBlock door
-                    && door.kind().siloCover()
-                    && state.getValue(com.apexballistics.block.FacilityDoorBlock.OPEN) != open) {
-                com.apexballistics.block.FacilityDoorBlock.setOpen(level, pos.immutable(), open);
+                    && door.kind().siloCover()) {
+                origin = pos.immutable();
+            } else if (state.is(ModBlocks.DOOR_PART.get())
+                    && state.getValue(com.apexballistics.block.DoorPartBlock.KIND).siloCover()) {
+                origin = com.apexballistics.block.DoorPartBlock.originOf(pos, state);
+            }
+            if (origin == null) {
+                continue;
+            }
+            BlockState originState = level.getBlockState(origin);
+            if (originState.getBlock() instanceof com.apexballistics.block.FacilityDoorBlock
+                    && originState.getValue(com.apexballistics.block.FacilityDoorBlock.OPEN) != open) {
+                com.apexballistics.block.FacilityDoorBlock.setOpen(level, origin, open);
             }
         }
     }

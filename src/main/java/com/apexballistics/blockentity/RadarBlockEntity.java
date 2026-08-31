@@ -26,6 +26,9 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 
 import java.util.Comparator;
 import java.util.Map;
@@ -75,9 +78,16 @@ public class RadarBlockEntity extends BlockEntity implements EmpSensitive, Cable
         }
     }
 
-    public void scan(Player player) {
-        owner = player.getUUID();
+    public void setOwner(UUID owner) {
+        this.owner = owner;
         setChanged();
+        if (level != null) {
+            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+        }
+    }
+
+    public void scan(Player player) {
+        setOwner(player.getUUID());
         if (empTicks > 0) {
             player.displayClientMessage(Component.translatable(
                     "message.apexballistics.radar_emp").withStyle(ChatFormatting.RED), true);
@@ -256,5 +266,15 @@ public class RadarBlockEntity extends BlockEntity implements EmpSensitive, Cable
         } else {
             linkedSiren = null;
         }
+    }
+
+    @Override
+    public CompoundTag getUpdateTag(HolderLookup.Provider registries) {
+        return saveWithoutMetadata(registries);
+    }
+
+    @Override
+    public Packet<ClientGamePacketListener> getUpdatePacket() {
+        return ClientboundBlockEntityDataPacket.create(this);
     }
 }
