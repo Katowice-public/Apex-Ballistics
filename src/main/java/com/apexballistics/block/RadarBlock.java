@@ -25,7 +25,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 public class RadarBlock extends Block implements EntityBlock {
-    private static final VoxelShape SHAPE = Block.box(-12, 0, -12, 28, 56, 28);
+    private static final VoxelShape CLICK = Block.box(1, 0, 1, 15, 15, 15);
+    private static final VoxelShape COLLISION = Block.box(-12, 0, -12, 28, 56, 28);
 
     public RadarBlock(Properties properties) {
         super(properties);
@@ -38,12 +39,17 @@ public class RadarBlock extends Block implements EntityBlock {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPE;
+        return CLICK;
     }
 
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return SHAPE;
+        return COLLISION;
+    }
+
+    @Override
+    protected VoxelShape getInteractionShape(BlockState state, BlockGetter level, BlockPos pos) {
+        return CLICK;
     }
 
     @Override

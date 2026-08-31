@@ -22,7 +22,8 @@ import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.Nullable;
 
 public class SystemBlock extends Block implements EntityBlock {
-    private static final VoxelShape CIWS_SHAPE = Block.box(-10, 0, -10, 26, 36, 26);
+    private static final VoxelShape CLICK = Block.box(1, 0, 1, 15, 15, 15);
+    private static final VoxelShape CIWS_COLLISION = Block.box(-10, 0, -10, 26, 36, 26);
     private final SystemType systemType;
 
     public SystemBlock(Properties properties, SystemType systemType) {
@@ -41,12 +42,17 @@ public class SystemBlock extends Block implements EntityBlock {
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return systemType == SystemType.CIWS ? CIWS_SHAPE : super.getShape(state, level, pos, context);
+        return systemType == SystemType.CIWS ? CLICK : super.getShape(state, level, pos, context);
     }
 
     @Override
     protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return systemType == SystemType.CIWS ? CIWS_SHAPE : super.getCollisionShape(state, level, pos, context);
+        return systemType == SystemType.CIWS ? CIWS_COLLISION : super.getCollisionShape(state, level, pos, context);
+    }
+
+    @Override
+    protected VoxelShape getInteractionShape(BlockState state, BlockGetter level, BlockPos pos) {
+        return systemType == SystemType.CIWS ? CLICK : super.getInteractionShape(state, level, pos);
     }
 
     @Nullable
