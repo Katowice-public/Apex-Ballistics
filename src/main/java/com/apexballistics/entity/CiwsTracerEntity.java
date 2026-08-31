@@ -3,6 +3,7 @@ package com.apexballistics.entity;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -16,9 +17,10 @@ import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.ForgeHooks;
+import net.minecraftforge.entity.IEntityAdditionalSpawnData;
 import org.joml.Vector3f;
 
-public class CiwsTracerEntity extends Projectile {
+public class CiwsTracerEntity extends Projectile implements IEntityAdditionalSpawnData {
     public static final DustParticleOptions TRACER = new DustParticleOptions(
             new Vector3f(1.00f, 0.42f, 0.08f), 1.15f);
 
@@ -86,5 +88,13 @@ public class CiwsTracerEntity extends Projectile {
     @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket(ServerEntity serverEntity) {
         return ForgeHooks.getEntitySpawnPacket(this);
+    }
+
+    @Override
+    public void writeSpawnData(FriendlyByteBuf buffer) {
+    }
+
+    @Override
+    public void readSpawnData(FriendlyByteBuf additionalData) {
     }
 }

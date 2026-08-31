@@ -60,12 +60,12 @@ public final class PerkWorkbenchScreen extends AbstractContainerScreen<PerkWorkb
         }
         WeaponPerks perks = WeaponPerks.fromStack(weapon);
         graphics.drawString(font, Component.translatable("tooltip.apexballistics.perk.range",
-                perks.range(), WeaponPerks.MAX), 128, 72, 0x70E0A0, false);
+                perks.range(), WeaponPerks.MAX), 20, 72, 0x70E0A0, false);
         graphics.drawString(font, Component.translatable("tooltip.apexballistics.perk.damage",
-                perks.damage(), WeaponPerks.MAX), 128, 86, 0xFF4B3E, false);
+                perks.damage(), WeaponPerks.MAX), 20, 86, 0xFF4B3E, false);
         graphics.drawString(font, Component.translatable("tooltip.apexballistics.perk.accuracy",
-                perks.accuracy(), WeaponPerks.MAX), 20, 74, 0xA0E070, false);
+                perks.accuracy(), WeaponPerks.MAX), 128, 80, 0xA0E070, false);
         graphics.drawString(font, Component.translatable("tooltip.apexballistics.perk.speed",
-                perks.speed(), WeaponPerks.MAX), 20, 88, 0xF0C85A, false);
+                perks.speed(), WeaponPerks.MAX), 128, 94, 0xF0C85A, false);
     }
 }

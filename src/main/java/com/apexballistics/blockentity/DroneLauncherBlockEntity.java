@@ -63,6 +63,9 @@ public class DroneLauncherBlockEntity extends BlockEntity implements Container, 
         if (cooldown > 0) {
             cooldown--;
         }
+        if (cooldown == 0 && empTicks == 0 && integrity >= 25 && level.hasNeighborSignal(worldPosition)) {
+            tryLaunch(null);
+        }
         ItemStack tablet = items.get(SLOT_TABLET);
         if (tablet.getItem() instanceof TargetingTabletItem) {
             TargetingTabletItem.readTarget(tablet).ifPresent(pos -> target = pos);
