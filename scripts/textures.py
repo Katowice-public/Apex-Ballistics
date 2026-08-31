@@ -342,6 +342,8 @@ def block_texture(name: str) -> bytes:
         metal_fill(buf, w, h, base, seed, panel=64)
         rect(buf, w, 192, 192, 320, 320, (160, 255, 255, 255))
         stencil(buf, w, "APEX", 160, 40, 10, (10, 40, 48, 255))
+    elif name == "cable":
+        return cable_conduit_texture()
     else:
         metal_fill(buf, w, h, base, seed, panel=64)
         stencil(buf, w, name.replace("_", " ")[:10], 40, 40, 4, (20, 20, 22, 255))
@@ -533,8 +535,48 @@ def build16_texture(name: str) -> bytes:
     return bytes(buf)
 
 
+def cable_conduit_texture() -> bytes:
+    """Rubber jacket with a yellow conductor stripe for the floor cable block."""
+    w = h = SIZE
+    buf = bytearray(w * h * 4)
+    fill(buf, w, h, (28, 36, 30, 255))
+    for y in range(h):
+        for x in range(w):
+            jacket = 22 + ((x * 17 + y * 13) % 18)
+            i = (y * w + x) * 4
+            buf[i] = jacket
+            buf[i + 1] = jacket + 10
+            buf[i + 2] = jacket - 4
+            buf[i + 3] = 255
+    # yellow conductor down the middle
+    rect(buf, w, 196, 0, 316, h, (210, 168, 36, 255))
+    rect(buf, w, 220, 0, 292, h, (238, 196, 48, 255))
+    for y in range(0, h, 36):
+        hline(buf, w, 196, 316, y, (120, 90, 20, 255))
+    # copper glands at the ends
+    rect(buf, w, 0, 0, w, 36, (140, 86, 42, 255))
+    rect(buf, w, 0, h - 36, w, h, (140, 86, 42, 255))
+    return bytes(buf)
+
+
+def draw_slot(buf: bytearray, w: int, x: int, y: int) -> None:
+    rect(buf, w, x - 1, y - 1, x + 17, y + 17, (6, 10, 14, 255))
+    rect(buf, w, x, y, x + 16, y + 16, (32, 42, 50, 255))
+    rect(buf, w, x + 1, y + 1, x + 15, y + 15, (12, 18, 24, 255))
+
+
+def inventory_slot_positions() -> list[tuple[int, int]]:
+    slots = []
+    for row in range(3):
+        for col in range(9):
+            slots.append((48 + col * 18, 118 + row * 18))
+    for col in range(9):
+        slots.append((48 + col * 18, 176))
+    return slots
+
+
 def panel_gui_texture(kind: str, heading: str, code: str, accent: tuple[int, int, int, int],
-                      motif: str) -> bytes:
+                      motif: str, slots: tuple = ()) -> bytes:
     w = h = SIZE
     buf = bytearray(w * h * 4)
     fill(buf, w, h, (6, 10, 14, 255))
@@ -573,6 +615,8 @@ def panel_gui_texture(kind: str, heading: str, code: str, accent: tuple[int, int
         rect(buf, w, 168, 48, 232, 150, (20, 32, 48, 255))
         rect(buf, w, 180, 60, 220, 138, accent)
         stencil(buf, w, "ROUND", 168, 148, 2, accent)
+    for x, y in slots:
+        draw_slot(buf, w, x, y)
     return bytes(buf)
 
 

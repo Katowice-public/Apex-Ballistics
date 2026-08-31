@@ -27,7 +27,7 @@ public class CiwsTracerEntity extends Projectile {
     public CiwsTracerEntity(EntityType<? extends CiwsTracerEntity> type, Level level) {
         super(type, level);
         this.noCulling = true;
-        this.noPhysics = false;
+        this.noPhysics = true;
     }
 
     @Override

@@ -49,6 +49,7 @@ from textures import (
     armor_layer,
     block_texture,
     build16_texture,
+    inventory_slot_positions,
     item_texture,
     launcher_gui_texture,
     panel_gui_texture,
@@ -470,23 +471,35 @@ def main() -> None:
         write_png(tex_gui / f"siren_{siren}.png", 512, 512, siren_gui_texture(siren))
     write_png(tex_gui / "missile_showcase.png", 512, 512, showcase_gui_texture())
     write_png(tex_gui / "drone_launcher.png", 512, 512,
-              panel_gui_texture("drone", "STRIKE DRONE", "TEL", (88, 176, 92, 255), "mobile"))
+              panel_gui_texture("drone", "STRIKE DRONE", "TEL", (88, 176, 92, 255), "mobile",
+                                slots=((20, 48), (56, 48), (92, 48), *inventory_slot_positions())))
     write_png(tex_gui / "perk_workbench.png", 512, 512,
-              panel_gui_texture("perk", "PERK BENCH", "MOD", (72, 168, 210, 255), "showcase"))
+              panel_gui_texture("perk", "PERK BENCH", "MOD", (72, 168, 210, 255), "showcase",
+                                slots=((38, 48), (80, 48), *inventory_slot_positions())))
 
     def cube_faces(texture="#0"):
         return {face: {"texture": texture, "uv": [0, 0, 16, 16]} for face in
                 ("north", "south", "east", "west", "up", "down")}
 
+    def cable_elements(x0, y0, z0, x1, y1, z1):
+        jacket = {"from": [x0, y0, z0], "to": [x1, y1, z1], "faces": cube_faces()}
+        conductor = {
+            "from": [x0 + 1.5, y1, z0 + (0 if z0 == 0 else 1.5)],
+            "to": [x1 - 1.5, y1 + 1.0, z1 - (0 if z0 == 0 else 1.5)],
+            "faces": cube_faces("#0"),
+            "shade": False,
+        }
+        return [jacket, conductor]
+
     write_json(models_block / "cable_core.json", {
         "parent": "minecraft:block/block",
         "textures": {"0": "apexballistics:block/cable", "particle": "apexballistics:block/cable"},
-        "elements": [{"from": [6, 0, 6], "to": [10, 3, 10], "faces": cube_faces()}],
+        "elements": cable_elements(5, 0, 5, 11, 4, 11),
     })
     write_json(models_block / "cable_side.json", {
         "parent": "minecraft:block/block",
         "textures": {"0": "apexballistics:block/cable", "particle": "apexballistics:block/cable"},
-        "elements": [{"from": [6, 0, 0], "to": [10, 3, 6], "faces": cube_faces()}],
+        "elements": cable_elements(5, 0, 0, 11, 4, 6),
     })
     write_json(blockstates / "cable.json", {
         "multipart": [

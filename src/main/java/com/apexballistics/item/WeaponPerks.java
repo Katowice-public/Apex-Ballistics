@@ -52,7 +52,13 @@ public record WeaponPerks(int range, int damage, int accuracy, int speed) {
     }
 
     public static boolean canUpgrade(ItemStack stack) {
-        return stack.getItem() instanceof MissileItem || stack.getItem() instanceof StrikeDroneItem;
+        return stack.getItem() instanceof MissileItem
+                || stack.getItem() instanceof StrikeDroneItem
+                || stack.getItem() instanceof BombItem;
+    }
+
+    public WeaponPerks mergeDamage(WeaponPerks other) {
+        return new WeaponPerks(range, clamp(damage + other.damage()), accuracy, speed);
     }
 
     public int level(PerkKind kind) {

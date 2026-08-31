@@ -106,7 +106,11 @@ public class DefenseSystemBlockEntity extends BlockEntity implements EmpSensitiv
             }
             Entity threatOwner = entity instanceof net.minecraft.world.entity.projectile.Projectile projectile
                     ? projectile.getOwner() : null;
-            return threatOwner == null || FactionRelations.isHostile(ownerPlayer, threatOwner);
+            if (ownerPlayer != null && (threatOwner == ownerPlayer
+                    || FactionRelations.isFriendly(ownerPlayer, threatOwner))) {
+                return false;
+            }
+            return true;
         });
         Entity target = contacts.stream().min(Comparator.comparingDouble(
                 entity -> entity.distanceToSqr(origin))).orElse(null);

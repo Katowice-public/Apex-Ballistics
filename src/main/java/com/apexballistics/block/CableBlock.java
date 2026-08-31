@@ -4,6 +4,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.RenderShape;
@@ -34,11 +35,11 @@ public class CableBlock extends Block {
             Direction.WEST, WEST
     );
 
-    private static final VoxelShape CORE = Block.box(6.0, 0.0, 6.0, 10.0, 3.0, 10.0);
-    private static final VoxelShape ARM_NORTH = Block.box(6.0, 0.0, 0.0, 10.0, 3.0, 6.0);
-    private static final VoxelShape ARM_SOUTH = Block.box(6.0, 0.0, 10.0, 10.0, 3.0, 16.0);
-    private static final VoxelShape ARM_WEST = Block.box(0.0, 0.0, 6.0, 6.0, 3.0, 10.0);
-    private static final VoxelShape ARM_EAST = Block.box(10.0, 0.0, 6.0, 16.0, 3.0, 10.0);
+    private static final VoxelShape CORE = Block.box(5.0, 0.0, 5.0, 11.0, 4.0, 11.0);
+    private static final VoxelShape ARM_NORTH = Block.box(5.0, 0.0, 0.0, 11.0, 4.0, 5.0);
+    private static final VoxelShape ARM_SOUTH = Block.box(5.0, 0.0, 11.0, 11.0, 4.0, 16.0);
+    private static final VoxelShape ARM_WEST = Block.box(0.0, 0.0, 5.0, 5.0, 4.0, 11.0);
+    private static final VoxelShape ARM_EAST = Block.box(11.0, 0.0, 5.0, 16.0, 4.0, 11.0);
     private static final VoxelShape[] SHAPES = buildShapes();
 
     public CableBlock(Properties properties) {
@@ -65,6 +66,18 @@ public class CableBlock extends Block {
     protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
                                      LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
         return connectionState(level, pos, state);
+    }
+
+    @Override
+    protected void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
+        super.onPlace(state, level, pos, oldState, movedByPiston);
+        if (level.isClientSide || movedByPiston) {
+            return;
+        }
+        BlockState connected = connectionState(level, pos, state);
+        if (!connected.equals(state)) {
+            level.setBlock(pos, connected, 3);
+        }
     }
 
     @Override

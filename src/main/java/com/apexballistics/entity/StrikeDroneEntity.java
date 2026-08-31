@@ -197,7 +197,7 @@ public class StrikeDroneEntity extends Projectile implements AerialThreat, IEnti
         BombEntity bomb = new BombEntity(ModEntities.BOMB.get(), level());
         bomb.setOwner(getOwner());
         bomb.setKind(bombKind());
-        bomb.setPerks(bombPerks);
+        bomb.setPerks(bombPerks.mergeDamage(dronePerks));
         bomb.setPos(getX(), getY() - 0.45, getZ());
         bomb.setDeltaMovement(getDeltaMovement().x * 0.15, -0.12, getDeltaMovement().z * 0.15);
         level().addFreshEntity(bomb);

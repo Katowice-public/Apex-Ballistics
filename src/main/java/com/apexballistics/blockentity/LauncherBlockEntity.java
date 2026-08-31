@@ -272,7 +272,7 @@ public class LauncherBlockEntity extends BlockEntity implements EmpSensitive, Me
         if (entity instanceof StrikeDroneEntity drone) {
             Entity own = operator == null || level == null ? null : level.getPlayerByUUID(operator);
             Entity droneOwner = drone.getOwner();
-            return droneOwner == null || FactionRelations.isHostile(own, droneOwner);
+            return own == null || (droneOwner != own && !FactionRelations.isFriendly(own, droneOwner));
         }
         if (entity instanceof MissileEntity missileEntity) {
             Entity own = operator == null || level == null ? null : level.getPlayerByUUID(operator);
